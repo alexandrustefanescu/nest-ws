@@ -108,3 +108,54 @@ export class WsInfoResponseDto {
   @ApiProperty({ example: 'WebSocket event documentation. Connect via Socket.IO at ws://localhost:3000' })
   message: string;
 }
+
+export class MessagesHistoryEventDto {
+  @ApiProperty({ example: 1, description: 'Emitted as: messages:history — sent to joining socket only' })
+  roomId: number;
+
+  @ApiProperty({ type: [MessageNewEventDto] })
+  messages: MessageNewEventDto[];
+
+  @ApiProperty({ example: true })
+  hasMore: boolean;
+}
+
+export class MessageDeletedEventDto {
+  @ApiProperty({ example: 1, description: 'Emitted as: message:deleted — broadcast to the room' })
+  roomId: number;
+
+  @ApiProperty({ example: 42 })
+  messageId: number;
+}
+
+export class ChatClearedEventDto {
+  @ApiProperty({ example: 1, description: 'Emitted as: chat:cleared — broadcast to the room' })
+  roomId: number;
+}
+
+export class LoadMoreDto {
+  @ApiProperty({ example: 1, description: 'Client → server: messages:load-more' })
+  roomId: number;
+
+  @ApiProperty({ example: 100, description: 'Fetch messages with id < before' })
+  before: number;
+}
+
+export class DeleteMessageDto {
+  @ApiProperty({ example: 1, description: 'Client → server: message:delete' })
+  roomId: number;
+
+  @ApiProperty({ example: 42 })
+  messageId: number;
+
+  @ApiProperty({ example: 'user-123' })
+  userId: string;
+}
+
+export class ClearChatDto {
+  @ApiProperty({ example: 1, description: 'Client → server: chat:clear' })
+  roomId: number;
+
+  @ApiProperty({ example: 'user-123' })
+  userId: string;
+}
