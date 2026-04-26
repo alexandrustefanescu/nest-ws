@@ -9,28 +9,37 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UseFilters, UseInterceptors } from '@nestjs/common';
+import { OnModuleInit, UseFilters, UseInterceptors } from '@nestjs/common';
 import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
 import { WsExceptionFilter } from '../filters/ws-exception.filter';
 import { LoggingInterceptor } from '../interceptors/logging.interceptor';
 import { JoinRoomPipe, SendMessagePipe, TypingPipe } from '../pipes';
+import { Message } from '../entities/message.entity';
 
 const ALLOWED_REACTIONS = new Set(['👍', '❤️', '😂', '😮', '😢', '🔥']);
+
+type ClientRooms = Map<number, string>;
+type RoomUserSockets = Map<string, Set<string>>;
 
 @WebSocketGateway({ cors: { origin: '*' } })
 @UseFilters(new WsExceptionFilter())
 @UseInterceptors(new LoggingInterceptor())
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  private clientRooms = new Map<string, { roomId: number; userId: string }>();
+  private readonly clientRooms = new Map<string, ClientRooms>();
+  private readonly roomUserSockets = new Map<number, RoomUserSockets>();
 
   constructor(
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
   ) {}
+
+  async onModuleInit() {
+    await this.chatService.clearPresence();
+  }
 
   async handleConnection(@ConnectedSocket() client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -40,17 +49,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleDisconnect(@ConnectedSocket() client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
-    const clientData = this.clientRooms.get(client.id);
-    if (clientData) {
-      const { roomId, userId } = clientData;
-      this.clientRooms.delete(client.id);
-      await this.chatService.removeUserFromRoom(roomId, userId);
-      const users = await this.chatService.getUsersInRoom(roomId);
-      this.server.to(`room-${roomId}`).emit('user:left', {
-        userId,
-        timestamp: new Date().toISOString(),
-      });
-      this.server.to(`room-${roomId}`).emit('users:list', users);
+    const joinedRooms = this.clientRooms.get(client.id);
+    if (!joinedRooms) {
+      return;
+    }
+
+    for (const [roomId, userId] of joinedRooms) {
+      const userLeftRoom = await this.untrackClientRoom(client.id, roomId, userId);
+      if (userLeftRoom) {
+        await this.emitUserLeft(roomId, userId);
+      }
     }
   }
 
@@ -68,18 +76,27 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     await this.chatService.addUserToRoom(roomId, userId);
     client.join(`room-${roomId}`);
-    this.clientRooms.set(client.id, { roomId, userId });
+    const userJoinedRoom = this.trackClientRoom(client.id, roomId, userId);
 
-    this.server.to(`room-${roomId}`).emit('user:joined', {
-      userId,
-      timestamp: new Date().toISOString(),
-    });
+    if (userJoinedRoom) {
+      this.server.to(`room-${roomId}`).emit('user:joined', {
+        userId,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
     const users = await this.chatService.getUsersInRoom(roomId);
     this.server.to(`room-${roomId}`).emit('users:list', users);
 
     const snapshot = await this.chatService.getReactionsForRoom(roomId);
     client.emit('reactions:snapshot', snapshot);
+
+    const history = await this.chatService.getMessageHistory(roomId);
+    client.emit('messages:history', {
+      roomId,
+      messages: history,
+      hasMore: history.length === 50,
+    });
   }
 
   @SubscribeMessage('message:send')
@@ -191,10 +208,130 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const { roomId, userId } = data;
 
-    await this.chatService.removeUserFromRoom(roomId, userId);
     client.leave(`room-${roomId}`);
-    this.clientRooms.delete(client.id);
+    const userLeftRoom = await this.untrackClientRoom(client.id, roomId, userId);
+    if (userLeftRoom) {
+      await this.emitUserLeft(roomId, userId);
+    }
+  }
 
+  @SubscribeMessage('messages:load-more')
+  async handleLoadMore(
+    @MessageBody() data: { roomId: number; before: number },
+  ): Promise<{ messages: Message[]; hasMore: boolean }> {
+    const { roomId, before } = data ?? {};
+    if (!roomId || !before) return { messages: [], hasMore: false };
+    const messages = await this.chatService.getMessageHistory(roomId, before);
+    return { messages, hasMore: messages.length === 50 };
+  }
+
+  @SubscribeMessage('message:delete')
+  async handleDeleteMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomId: number; messageId: number; userId: string },
+  ): Promise<void> {
+    const { roomId, messageId, userId } = data ?? {};
+    await this.chatService.deleteMessage(messageId, userId);
+    this.server.to(`room-${roomId}`).emit('message:deleted', { roomId, messageId });
+  }
+
+  @SubscribeMessage('chat:clear')
+  async handleClearChat(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomId: number; userId: string },
+  ): Promise<void> {
+    const { roomId } = data ?? {};
+    await this.chatService.clearRoomMessages(roomId);
+    this.server.to(`room-${roomId}`).emit('chat:cleared', { roomId });
+  }
+
+  private trackClientRoom(clientId: string, roomId: number, userId: string): boolean {
+    const clientRooms = this.getOrCreateClientRooms(clientId);
+    const previousUserId = clientRooms.get(roomId);
+    if (previousUserId === userId) {
+      return false;
+    }
+    if (previousUserId) {
+      this.removeClientSocketFromRoom(clientId, roomId, previousUserId);
+    }
+
+    clientRooms.set(roomId, userId);
+    const userSockets = this.getOrCreateUserSockets(roomId, userId);
+    const wasOffline = userSockets.size === 0;
+    userSockets.add(clientId);
+
+    return wasOffline;
+  }
+
+  private async untrackClientRoom(
+    clientId: string,
+    roomId: number,
+    userId: string,
+  ): Promise<boolean> {
+    const clientRooms = this.clientRooms.get(clientId);
+    if (clientRooms?.get(roomId) === userId) {
+      clientRooms.delete(roomId);
+      if (clientRooms.size === 0) {
+        this.clientRooms.delete(clientId);
+      }
+    }
+
+    const userStillPresent = this.removeClientSocketFromRoom(clientId, roomId, userId);
+    if (userStillPresent) {
+      return false;
+    }
+
+    await this.chatService.removeUserFromRoom(roomId, userId);
+    return true;
+  }
+
+  private removeClientSocketFromRoom(clientId: string, roomId: number, userId: string): boolean {
+    const roomUsers = this.roomUserSockets.get(roomId);
+    const userSockets = roomUsers?.get(userId);
+    if (!roomUsers || !userSockets) {
+      return false;
+    }
+
+    userSockets.delete(clientId);
+    if (userSockets.size > 0) {
+      return true;
+    }
+
+    roomUsers.delete(userId);
+    if (roomUsers.size === 0) {
+      this.roomUserSockets.delete(roomId);
+    }
+    return false;
+  }
+
+  private getOrCreateClientRooms(clientId: string): ClientRooms {
+    const existing = this.clientRooms.get(clientId);
+    if (existing) {
+      return existing;
+    }
+
+    const clientRooms = new Map<number, string>();
+    this.clientRooms.set(clientId, clientRooms);
+    return clientRooms;
+  }
+
+  private getOrCreateUserSockets(roomId: number, userId: string): Set<string> {
+    let roomUsers = this.roomUserSockets.get(roomId);
+    if (!roomUsers) {
+      roomUsers = new Map<string, Set<string>>();
+      this.roomUserSockets.set(roomId, roomUsers);
+    }
+
+    let userSockets = roomUsers.get(userId);
+    if (!userSockets) {
+      userSockets = new Set<string>();
+      roomUsers.set(userId, userSockets);
+    }
+
+    return userSockets;
+  }
+
+  private async emitUserLeft(roomId: number, userId: string): Promise<void> {
     this.server.to(`room-${roomId}`).emit('user:left', {
       userId,
       timestamp: new Date().toISOString(),
