@@ -36,7 +36,7 @@ describe('ChatService', () => {
 
   beforeEach(async () => {
     mockMessageRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn() };
-    mockRoomUserRepository = { find: jest.fn(), create: jest.fn(), save: jest.fn(), delete: jest.fn() };
+    mockRoomUserRepository = { find: jest.fn(), findOne: jest.fn(), create: jest.fn(), save: jest.fn(), delete: jest.fn() };
     mockTypingStatusRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn() };
     mockReactionRepository = {
       findOne: jest.fn(),
@@ -87,6 +87,7 @@ describe('ChatService', () => {
 
   it('should add user to room', async () => {
     const mockRoomUser = { id: 1, roomId: 1, userId: 'user1', joinedAt: new Date() };
+    mockRoomUserRepository.findOne.mockResolvedValue(null);
     mockRoomUserRepository.create.mockReturnValue(mockRoomUser);
     mockRoomUserRepository.save.mockResolvedValue(mockRoomUser);
 
