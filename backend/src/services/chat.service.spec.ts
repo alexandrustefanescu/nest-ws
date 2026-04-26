@@ -237,6 +237,15 @@ describe('ChatService', () => {
     });
   });
 
+  it('clearRoomMessages deletes only messages, not users', async () => {
+    mockMessageRepository.delete.mockResolvedValue({ affected: 5 });
+
+    await service.clearRoomMessages(1);
+
+    expect(mockMessageRepository.delete).toHaveBeenCalledWith({ roomId: 1 });
+    expect(mockRoomUserRepository.delete).not.toHaveBeenCalled();
+  });
+
   describe('getReactionsForRoom', () => {
     it('should return aggregated reactions keyed by messageId', async () => {
       const mockQB = {
