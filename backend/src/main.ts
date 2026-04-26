@@ -10,8 +10,11 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
-    { cors: true }
+    { cors: false }
   );
+
+  await app.register(helmet);
+  await app.register(fastifyCsrf);
 
   const config = new DocumentBuilder()
     .setTitle('nest-ws Chat API')
@@ -31,8 +34,6 @@ async function bootstrap() {
       title: 'nest-ws API Reference',
     },
   });
-  await app.register(helmet);
-  await app.register(fastifyCsrf);
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
   console.log(`Application is running on: ${await app.getUrl()}`);
