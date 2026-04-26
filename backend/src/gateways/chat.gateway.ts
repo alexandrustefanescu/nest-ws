@@ -179,6 +179,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     if (!name) {
       throw new WsException('Room name is required');
     }
+    if (name.length > 100) {
+      throw new WsException('Room name must be 100 characters or fewer');
+    }
     const room = await this.roomService.createRoom(name);
     const allRooms = await this.roomService.getAllRooms();
     this.server.emit('rooms:list', allRooms);
@@ -216,6 +219,13 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: { roomId: number; messageId: number; userId: string; emoji: string },
   ) {
     const { roomId, messageId, userId, emoji } = data ?? {};
+    if (
+      typeof roomId !== 'number' || !Number.isInteger(roomId) || roomId <= 0 ||
+      typeof messageId !== 'number' || !Number.isInteger(messageId) || messageId <= 0 ||
+      typeof userId !== 'string' || userId.trim().length === 0
+    ) {
+      throw new WsException('Invalid payload');
+    }
     if (!ALLOWED_REACTIONS.has(emoji)) {
       throw new WsException('Invalid emoji');
     }
@@ -246,7 +256,12 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: { roomId: number; before: number },
   ): Promise<{ messages: Message[]; hasMore: boolean }> {
     const { roomId, before } = data ?? {};
-    if (!roomId || !before) return { messages: [], hasMore: false };
+    if (
+      typeof roomId !== 'number' || !Number.isInteger(roomId) || roomId <= 0 ||
+      typeof before !== 'number' || !Number.isInteger(before) || before <= 0
+    ) {
+      return { messages: [], hasMore: false };
+    }
     const messages = await this.chatService.getMessageHistory(roomId, before);
     return { messages, hasMore: messages.length === 50 };
   }
@@ -259,6 +274,13 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: { roomId: number; messageId: number; userId: string },
   ): Promise<void> {
     const { roomId, messageId, userId } = data ?? {};
+    if (
+      typeof roomId !== 'number' || !Number.isInteger(roomId) || roomId <= 0 ||
+      typeof messageId !== 'number' || !Number.isInteger(messageId) || messageId <= 0 ||
+      typeof userId !== 'string' || userId.trim().length === 0
+    ) {
+      throw new WsException('Invalid payload');
+    }
     await this.chatService.deleteMessage(messageId, userId);
     this.server.to(`room-${roomId}`).emit('message:deleted', { roomId, messageId });
   }
@@ -271,6 +293,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: { roomId: number; userId: string },
   ): Promise<void> {
     const { roomId } = data ?? {};
+    if (typeof roomId !== 'number' || !Number.isInteger(roomId) || roomId <= 0) {
+      throw new WsException('roomId must be a positive integer');
+    }
     await this.chatService.clearRoomMessages(roomId);
     this.server.to(`room-${roomId}`).emit('chat:cleared', { roomId });
   }
