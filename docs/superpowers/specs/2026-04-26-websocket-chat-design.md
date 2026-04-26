@@ -16,6 +16,7 @@ A real-time chat application with rooms, presence tracking (user lists), and typ
 - Handles 6 core events: `connect`, `join-room`, `send-message`, `typing-start`, `typing-stop`, `disconnect`
 - Uses Socket.io rooms for broadcasting to subsets of clients
 - Integrates pipes for validation, interceptors for logging, exception filter for error handling
+- Built on Fastify adapter for high-performance WebSocket handling
 
 **ChatService** — Business logic for messaging and presence
 - `saveMessage(roomId, userId, text)` → saves to DB, returns Message entity
@@ -108,6 +109,11 @@ CREATE TABLE typing_status (
 - Node 20+ base image
 - Install dependencies, build TypeScript
 - Expose WebSocket port (default 3000)
+- Uses Fastify as HTTP adapter for NestJS
+
+**Main Application Setup:**
+- Replace default Express with Fastify adapter in `main.ts`
+- Configure Socket.io on top of Fastify for WebSocket support
 
 **docker-compose.yml:**
 - Backend service with SQLite volume mount
