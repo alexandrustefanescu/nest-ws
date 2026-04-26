@@ -1,6 +1,16 @@
 {
   "version": 1,
   "skills": {
+    "clean-architecture": {
+      "source": "pproenca/dot-skills",
+      "sourceType": "github",
+      "computedHash": "613e3421174049dfb4a528c072cafb5e805322a6d9e1522ec9b74077e07947d7"
+    },
+    "clean-code": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "74bf6ded4f61ddcb593e7a29beb96c284f888cbe0639ad6e23710447c36ff19a"
+    },
     "nestjs-best-practices": {
       "source": "kadajett/agent-nestjs-skills",
       "sourceType": "github",
@@ -15,6 +25,16 @@
       "source": "affaan-m/everything-claude-code",
       "sourceType": "github",
       "computedHash": "0ff35d7a72bb462f51629b38dcb525ab0368ff755cbd1cf121c144e7d05f12a1"
+    },
+    "tailwind-design-system": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "988d80e52c67c3692d43cc963b6a048a239895e88b272b061de55370d0f8efc3"
+    },
+    "taste-design": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "1891625787d6f0f3bc45d4a9437c187277af66c219e3ec799b1b4e67822b6146"
     },
     "websocket-engineer": {
       "source": "jeffallan/claude-skills",
