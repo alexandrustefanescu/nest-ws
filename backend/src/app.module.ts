@@ -11,7 +11,7 @@ import { ChatService } from './services/chat.service';
 import { RoomService } from './services/room.service';
 import { AppController } from './app.controller';
 import { WsDocsController } from './controllers/ws-docs.controller';
-import { APP_GUARD, Reflector } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { WsThrottlerGuard } from './guards/ws-throttler.guard';
 
@@ -22,12 +22,8 @@ import { RoomsController } from './controllers/rooms.controller';
     TypeOrmModule.forRoot(databaseConfig),
     TypeOrmModule.forFeature([Room, RoomUser, Message, TypingStatus, MessageReaction]),
     ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 60000,
-          limit: 10,
-        },
-      ],
+      throttlers: [{ ttl: 60000, limit: 10 }],
+      skipIf: (ctx) => ctx.getType() !== 'http',
     }),
   ],
   controllers: [AppController, WsDocsController, RoomsController],
@@ -35,7 +31,6 @@ import { RoomsController } from './controllers/rooms.controller';
     ChatGateway,
     ChatService,
     RoomService,
-    Reflector,
     WsThrottlerGuard,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
