@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Delete, Param, ParseIntPipe } from '@nestj
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RoomService } from '../services/room.service';
 import { Room } from '../entities/room.entity';
+import { CreateRoomDto } from '../dto/create-room.dto';
 
 @ApiTags('rooms')
 @Controller('api/rooms')
@@ -18,8 +19,8 @@ export class RoomsController {
   @Post()
   @ApiOperation({ summary: 'Create a new room' })
   @ApiResponse({ status: 201, type: Room, description: 'Room created' })
-  async createRoom(@Body('name') name: string): Promise<Room> {
-    return this.roomService.createRoom(name.trim());
+  async createRoom(@Body() dto: CreateRoomDto): Promise<Room> {
+    return this.roomService.createRoom(dto.name.trim());
   }
 
   @Delete(':id')
