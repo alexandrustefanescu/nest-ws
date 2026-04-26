@@ -1,5 +1,10 @@
+packages:
+  - "backend"
+  - "frontend"
+  - "packages/*"
+
 onlyBuiltDependencies:
-  - '@nestjs/core'
-  - '@swc/core'
+  - "@nestjs/core"
+  - "@swc/core"
   - sqlite3
   - unrs-resolver
