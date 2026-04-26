@@ -1,0 +1,27 @@
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme((
+    color: (
+      primary: mat.$violet-palette,
+      theme-type: light,
+    ),
+    typography: 'Inter',
+    density: 0,
+  ));
+}
+
+html.dark {
+  @include mat.theme((
+    color: (
+      primary: mat.$violet-palette,
+      theme-type: dark,
+    ),
+  ));
+}
+
+body {
+  margin: 0;
+  height: 100%;
+}
