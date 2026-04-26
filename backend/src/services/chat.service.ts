@@ -29,6 +29,10 @@ export class ChatService {
   }
 
   async addUserToRoom(roomId: number, userId: string): Promise<RoomUser> {
+    const existing = await this.roomUserRepository.findOne({ where: { roomId, userId } });
+    if (existing) {
+      return existing;
+    }
     const roomUser = this.roomUserRepository.create({ roomId, userId });
     return this.roomUserRepository.save(roomUser);
   }

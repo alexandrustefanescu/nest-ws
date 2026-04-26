@@ -25,6 +25,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
+  private clientRooms = new Map<string, { roomId: number; userId: string }>();
+
   constructor(
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
@@ -38,6 +40,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleDisconnect(@ConnectedSocket() client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
+    const clientData = this.clientRooms.get(client.id);
+    if (clientData) {
+      const { roomId, userId } = clientData;
+      this.clientRooms.delete(client.id);
+      await this.chatService.removeUserFromRoom(roomId, userId);
+      const users = await this.chatService.getUsersInRoom(roomId);
+      this.server.to(`room-${roomId}`).emit('user:left', {
+        userId,
+        timestamp: new Date().toISOString(),
+      });
+      this.server.to(`room-${roomId}`).emit('users:list', users);
+    }
   }
 
   @SubscribeMessage('room:join')
@@ -54,6 +68,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     await this.chatService.addUserToRoom(roomId, userId);
     client.join(`room-${roomId}`);
+    this.clientRooms.set(client.id, { roomId, userId });
 
     this.server.to(`room-${roomId}`).emit('user:joined', {
       userId,
@@ -178,6 +193,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     await this.chatService.removeUserFromRoom(roomId, userId);
     client.leave(`room-${roomId}`);
+    this.clientRooms.delete(client.id);
 
     this.server.to(`room-${roomId}`).emit('user:left', {
       userId,
