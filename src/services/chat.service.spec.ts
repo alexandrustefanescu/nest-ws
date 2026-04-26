@@ -10,6 +10,7 @@ describe('ChatService', () => {
   let mockMessageRepository: {
     create: jest.Mock;
     save: jest.Mock;
+    delete: jest.Mock;
   };
   let mockRoomUserRepository: {
     find: jest.Mock;
@@ -25,7 +26,7 @@ describe('ChatService', () => {
   };
 
   beforeEach(async () => {
-    mockMessageRepository = { create: jest.fn(), save: jest.fn() };
+    mockMessageRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn() };
     mockRoomUserRepository = { find: jest.fn(), create: jest.fn(), save: jest.fn(), delete: jest.fn() };
     mockTypingStatusRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn() };
 
@@ -114,5 +115,17 @@ describe('ChatService', () => {
 
     expect(result).toEqual(mockStatuses);
     expect(mockTypingStatusRepository.find).toHaveBeenCalledWith({ where: { roomId: 1 } });
+  });
+
+  it('should clear all room data', async () => {
+    mockMessageRepository.delete.mockResolvedValue({ affected: 3 });
+    mockRoomUserRepository.delete.mockResolvedValue({ affected: 2 });
+    mockTypingStatusRepository.delete.mockResolvedValue({ affected: 1 });
+
+    await service.clearRoomData(1);
+
+    expect(mockMessageRepository.delete).toHaveBeenCalledWith({ roomId: 1 });
+    expect(mockRoomUserRepository.delete).toHaveBeenCalledWith({ roomId: 1 });
+    expect(mockTypingStatusRepository.delete).toHaveBeenCalledWith({ roomId: 1 });
   });
 });

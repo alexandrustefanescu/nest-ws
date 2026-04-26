@@ -47,4 +47,10 @@ export class ChatService {
   async getTypingUsersInRoom(roomId: number): Promise<TypingStatus[]> {
     return this.typingStatusRepository.find({ where: { roomId } });
   }
+
+  async clearRoomData(roomId: number): Promise<void> {
+    await this.messageRepository.delete({ roomId });
+    await this.roomUserRepository.delete({ roomId });
+    await this.typingStatusRepository.delete({ roomId });
+  }
 }
