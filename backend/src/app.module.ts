@@ -11,7 +11,8 @@ import { ChatService } from './services/chat.service';
 import { RoomService } from './services/room.service';
 import { AppController } from './app.controller';
 import { WsDocsController } from './controllers/ws-docs.controller';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD, Reflector } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { RoomsController } from './controllers/rooms.controller';
 
@@ -29,6 +30,12 @@ import { RoomsController } from './controllers/rooms.controller';
     }),
   ],
   controllers: [AppController, WsDocsController, RoomsController],
-  providers: [ChatGateway, ChatService, RoomService],
+  providers: [
+    ChatGateway,
+    ChatService,
+    RoomService,
+    Reflector,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}
