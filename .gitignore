@@ -7,6 +7,8 @@
 /frontend/dist
 /frontend/node_modules
 /frontend/.angular
+/packages/**/dist
+/packages/**/node_modules
 
 # Logs
 logs
@@ -67,3 +69,6 @@ chat.db
 # IDE and agent directories
 .agents/
 .claude/
+
+# Docs / planning artifacts
+docs/
