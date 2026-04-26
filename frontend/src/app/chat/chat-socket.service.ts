@@ -3,7 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
 import { IdentityService } from './identity.service';
-import type { ConnectionState, Message, Room, RoomUser } from './chat.models';
+import type { ConnectionState, Message, ReactionMap, Room, RoomUser } from './chat.models';
 
 const TYPING_DEBOUNCE_MS = 3000;
 
@@ -22,6 +22,7 @@ export class ChatSocketService {
   readonly roomUsers = signal<Record<number, RoomUser[]>>({});
   readonly roomMessages = signal<Record<number, Message[]>>({});
   readonly typingUsers = signal<Record<number, Set<string>>>({});
+  readonly roomReactions = signal<Record<number, ReactionMap>>({});
 
   constructor() {
     if (this.isBrowser) {
@@ -116,6 +117,17 @@ export class ChatSocketService {
     this.socket.on('user:left', () => {
       // presence reflected via users:list
     });
+
+    this.socket.on('reactions:snapshot', (snapshot: Record<number, ReactionMap>) => {
+      this.roomReactions.set(snapshot);
+    });
+
+    this.socket.on('reaction:updated', (data: { messageId: number; reactions: ReactionMap }) => {
+      this.roomReactions.update((prev) => ({
+        ...prev,
+        [data.messageId]: data.reactions,
+      }));
+    });
   }
 
   joinRoom(roomId: number): void {
@@ -166,6 +178,15 @@ export class ChatSocketService {
     this.clearTypingTimer(roomId);
     const timer = setTimeout(() => this.typingStop(roomId), TYPING_DEBOUNCE_MS);
     this.typingTimers.set(roomId, timer);
+  }
+
+  toggleReaction(roomId: number, messageId: number, emoji: string): void {
+    this.socket?.emit('reaction:toggle', {
+      roomId,
+      messageId,
+      userId: this.identity.userId(),
+      emoji,
+    });
   }
 
   private clearTypingTimer(roomId: number): void {
