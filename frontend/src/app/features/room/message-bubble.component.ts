@@ -105,6 +105,22 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
       border-color: var(--border-subtle);
     }
     .reaction-pill:hover { opacity: 0.8; }
+
+    .delete-btn {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 1px solid var(--border-subtle);
+      background: var(--surface-1);
+      font-size: 13px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; align-self: center;
+      transition: background var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
+      padding: 0; color: var(--text-faint);
+      opacity: 0; pointer-events: none;
+    }
+    .delete-btn:hover { background: var(--surface-2); color: var(--text-strong); }
+    .bubble-row:hover .delete-btn,
+    .bubble-row:focus-within .delete-btn { opacity: 1; pointer-events: auto; }
+    .bubble-row.own .delete-btn { order: -2; margin-right: 4px; }
   `],
   template: `
     @if (!isOwn() && firstInGroup()) {
@@ -142,6 +158,14 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
             >{{ emoji }}</button>
           }
         </div>
+      }
+
+      @if (isOwn()) {
+        <button
+          class="delete-btn"
+          (click)="deleteMsg()"
+          aria-label="Delete message"
+        >×</button>
       }
     </div>
 
@@ -197,5 +221,9 @@ export class MessageBubbleComponent {
   react(emoji: string): void {
     this.chat.toggleReaction(this.roomId(), this.message().id, emoji);
     this.showPicker.set(false);
+  }
+
+  deleteMsg(): void {
+    this.chat.deleteMessage(this.roomId(), this.message().id);
   }
 }
