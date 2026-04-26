@@ -158,7 +158,7 @@ describe('ChatService', () => {
 
       const result = await service.toggleReaction(1, 'u1', '👍');
 
-      expect(mockReactionRepository.save).toHaveBeenCalled();
+      expect(mockReactionRepository.save).toHaveBeenCalledWith({ messageId: 1, userId: 'u1', emoji: '👍' });
       expect(result).toEqual({ '👍': ['u1'] });
     });
 
