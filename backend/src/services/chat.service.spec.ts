@@ -12,6 +12,7 @@ describe('ChatService', () => {
     create: jest.Mock;
     save: jest.Mock;
     delete: jest.Mock;
+    find: jest.Mock;
   };
   let mockRoomUserRepository: {
     find: jest.Mock;
@@ -35,7 +36,7 @@ describe('ChatService', () => {
   };
 
   beforeEach(async () => {
-    mockMessageRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn() };
+    mockMessageRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn() };
     mockRoomUserRepository = { find: jest.fn(), findOne: jest.fn(), create: jest.fn(), save: jest.fn(), delete: jest.fn() };
     mockTypingStatusRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn() };
     mockReactionRepository = {
@@ -172,6 +173,41 @@ describe('ChatService', () => {
 
       expect(mockReactionRepository.delete).toHaveBeenCalledWith({ messageId: 1, userId: 'u1', emoji: '👍' });
       expect(result).toEqual({});
+    });
+  });
+
+  describe('getMessageHistory', () => {
+    it('returns last 50 messages in ascending order when no cursor given', async () => {
+      const msgs = [
+        { id: 1, roomId: 1, userId: 'u1', text: 'a', createdAt: new Date() },
+        { id: 2, roomId: 1, userId: 'u1', text: 'b', createdAt: new Date() },
+      ];
+      mockMessageRepository.find.mockResolvedValue([...msgs].reverse());
+
+      const result = await service.getMessageHistory(1);
+
+      expect(mockMessageRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { roomId: 1 },
+          order: { id: 'DESC' },
+          take: 50,
+        }),
+      );
+      expect(result).toEqual(msgs);
+    });
+
+    it('applies before cursor when provided', async () => {
+      mockMessageRepository.find.mockResolvedValue([]);
+
+      await service.getMessageHistory(1, 10);
+
+      expect(mockMessageRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ roomId: 1 }),
+          order: { id: 'DESC' },
+          take: 50,
+        }),
+      );
     });
   });
 

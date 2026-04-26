@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { Message } from '../entities/message.entity';
 import { RoomUser } from '../entities/room-user.entity';
 import { TypingStatus } from '../entities/typing-status.entity';
@@ -24,6 +24,18 @@ export class ChatService {
     return this.messageRepository.save(message);
   }
 
+  async getMessageHistory(roomId: number, before?: number, limit = 50): Promise<Message[]> {
+    const where = before !== undefined
+      ? { roomId, id: LessThan(before) }
+      : { roomId };
+    const messages = await this.messageRepository.find({
+      where,
+      order: { id: 'DESC' },
+      take: limit,
+    });
+    return messages.reverse();
+  }
+
   async getUsersInRoom(roomId: number): Promise<RoomUser[]> {
     return this.roomUserRepository.find({ where: { roomId } });
   }
@@ -39,6 +51,10 @@ export class ChatService {
 
   async removeUserFromRoom(roomId: number, userId: string): Promise<void> {
     await this.roomUserRepository.delete({ roomId, userId });
+  }
+
+  async clearPresence(): Promise<void> {
+    await this.roomUserRepository.clear();
   }
 
   async markUserTyping(roomId: number, userId: string): Promise<TypingStatus> {
