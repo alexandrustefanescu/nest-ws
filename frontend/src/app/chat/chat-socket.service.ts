@@ -77,8 +77,8 @@ export class ChatSocketService {
     });
 
     this.socket.on('users:list', (users: RoomUser[]) => {
-      const roomId = users[0]?.roomId;
-      if (roomId !== undefined) {
+      const roomId = users[0]?.roomId ?? this.currentRoomId();
+      if (roomId !== null) {
         this.roomUsers.update((prev) => ({ ...prev, [roomId]: users }));
       }
     });

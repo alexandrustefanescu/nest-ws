@@ -138,7 +138,7 @@ export interface GroupedMessage {
             [currentUserId]="identity.userId()"
             [firstInGroup]="item.firstInGroup"
             [lastInGroup]="item.lastInGroup"
-            [reactions]="chat.roomReactions()[item.msg.id] ?? {}"
+            [reactions]="chat.roomReactions()[item.msg.id]"
             [roomId]="roomId()"
           />
         }

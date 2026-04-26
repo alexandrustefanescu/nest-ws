@@ -47,20 +47,21 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
     .timestamp.hidden { visibility: hidden; height: 0; margin: 0; overflow: hidden; }
 
     .reaction-trigger {
-      position: absolute; top: 4px;
       width: 24px; height: 24px; border-radius: 50%;
       border: 1px solid var(--border-subtle);
       background: var(--surface-1);
       font-size: 13px; cursor: pointer;
-      display: none; align-items: center; justify-content: center;
-      transition: background var(--dur-fast) var(--ease-out);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; align-self: center;
+      transition: background var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
       padding: 0;
+      opacity: 0; pointer-events: none;
     }
     .reaction-trigger:hover { background: var(--surface-2); }
     .bubble-row:hover .reaction-trigger,
-    .bubble-row:focus-within .reaction-trigger { display: flex; }
-    .bubble-row.own .reaction-trigger { left: -30px; }
-    .bubble-row.other .reaction-trigger { right: -30px; }
+    .bubble-row:focus-within .reaction-trigger { opacity: 1; pointer-events: auto; }
+    .bubble-row.own .reaction-trigger { order: -1; margin-right: 6px; }
+    .bubble-row.other .reaction-trigger { margin-left: 6px; }
 
     .reaction-picker {
       position: absolute; top: -4px; z-index: 50;
