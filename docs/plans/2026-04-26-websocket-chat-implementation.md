@@ -8,6 +8,57 @@
 
 **Tech Stack:** NestJS 11, Fastify, Socket.io, TypeORM, SQLite, TypeScript
 
+**Verified against:** Official NestJS docs (gateways, pipes, exception-filters, interceptors, adapter) via context7.
+
+**Key conventions (per NestJS docs):**
+- Use `WsException` (from `@nestjs/websockets`) for errors thrown inside gateways/pipes — NOT `HttpException` or `BadRequestException`
+- Exception filters extend `BaseWsExceptionFilter` and delegate to `super.catch()` for default handling
+- Pipes are typically instantiated: `@UsePipes(new MyPipe())`
+- Default error message format: `{ status: 'error', message: '...' }`
+
+---
+
+## Task 0: Install Required Dependencies
+
+**Files:**
+- Modify: `package.json`
+
+**Step 1: Install runtime dependencies**
+
+Run:
+
+```bash
+pnpm add @nestjs/platform-fastify @nestjs/typeorm typeorm sqlite3
+```
+
+This installs:
+- `@nestjs/platform-fastify` — Fastify adapter for NestJS
+- `@nestjs/typeorm` — TypeORM integration
+- `typeorm` — ORM library
+- `sqlite3` — SQLite driver
+
+**Step 2: Install dev dependencies for E2E tests**
+
+Run:
+
+```bash
+pnpm add -D socket.io-client
+```
+
+This installs `socket.io-client` for Socket.io client connections in E2E tests.
+
+**Step 3: Verify dependencies installed**
+
+Run: `pnpm list --depth=0`
+Expected: All new packages appear in the dependency tree.
+
+**Step 4: Commit**
+
+```bash
+git add package.json pnpm-lock.yaml
+git commit -m "chore: add Fastify, TypeORM, SQLite, and socket.io-client dependencies"
+```
+
 ---
 
 ## Task 1: Setup Fastify and Database Configuration
@@ -16,6 +67,8 @@
 - Modify: `src/main.ts`
 - Create: `src/database.config.ts`
 - Create: `.env` (development)
+
+**Note on Fastify + Socket.io:** NestJS's `@nestjs/platform-socket.io` uses `IoAdapter` which attaches Socket.io to the underlying HTTP server. This works with both `FastifyAdapter` and `ExpressAdapter` because Fastify exposes the underlying Node.js HTTP server. No additional adapter configuration is needed for basic Socket.io functionality with Fastify.
 
 **Step 1: Update main.ts to use Fastify adapter**
 
@@ -31,7 +84,7 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter(),
   );
-  
+
   await app.listen(3000, '0.0.0.0');
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
@@ -491,21 +544,27 @@ git commit -m "feat: implement ChatService with message and presence methods"
 - Create: `src/pipes/send-message.pipe.ts`
 - Create: `src/pipes/typing.pipe.ts`
 
+**Note:** Per NestJS docs, throw `WsException` (from `@nestjs/websockets`) inside the WebSocket layer — not `HttpException`/`BadRequestException`. This produces a properly formatted WebSocket error message: `{ status: 'error', message: '...' }`.
+
 **Step 1: Create JoinRoomPipe**
 
 Create `src/pipes/join-room.pipe.ts`:
 
 ```typescript
-import { Injectable, PipeTransform, BadRequestException } from '@nestjs/common';
+import { Injectable, PipeTransform } from '@nestjs/common';
+import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class JoinRoomPipe implements PipeTransform {
   transform(value: any) {
+    if (!value || typeof value !== 'object') {
+      throw new WsException('Invalid payload');
+    }
     if (!value.roomId) {
-      throw new BadRequestException('roomId is required');
+      throw new WsException('roomId is required');
     }
     if (!value.userId) {
-      throw new BadRequestException('userId is required');
+      throw new WsException('userId is required');
     }
     return value;
   }
@@ -517,22 +576,26 @@ export class JoinRoomPipe implements PipeTransform {
 Create `src/pipes/send-message.pipe.ts`:
 
 ```typescript
-import { Injectable, PipeTransform, BadRequestException } from '@nestjs/common';
+import { Injectable, PipeTransform } from '@nestjs/common';
+import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class SendMessagePipe implements PipeTransform {
   transform(value: any) {
-    if (!value.roomId) {
-      throw new BadRequestException('roomId is required');
+    if (!value || typeof value !== 'object') {
+      throw new WsException('Invalid payload');
     }
-    if (!value.text) {
-      throw new BadRequestException('message text is required');
+    if (!value.roomId) {
+      throw new WsException('roomId is required');
+    }
+    if (!value.userId) {
+      throw new WsException('userId is required');
     }
     if (typeof value.text !== 'string' || value.text.length === 0) {
-      throw new BadRequestException('message must be a non-empty string');
+      throw new WsException('message must be a non-empty string');
     }
     if (value.text.length > 500) {
-      throw new BadRequestException('message must be less than 500 characters');
+      throw new WsException('message must be less than 500 characters');
     }
     return value;
   }
@@ -544,13 +607,20 @@ export class SendMessagePipe implements PipeTransform {
 Create `src/pipes/typing.pipe.ts`:
 
 ```typescript
-import { Injectable, PipeTransform, BadRequestException } from '@nestjs/common';
+import { Injectable, PipeTransform } from '@nestjs/common';
+import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class TypingPipe implements PipeTransform {
   transform(value: any) {
+    if (!value || typeof value !== 'object') {
+      throw new WsException('Invalid payload');
+    }
     if (!value.roomId) {
-      throw new BadRequestException('roomId is required');
+      throw new WsException('roomId is required');
+    }
+    if (!value.userId) {
+      throw new WsException('userId is required');
     }
     return value;
   }
@@ -628,40 +698,39 @@ git commit -m "feat: create logging interceptor for WebSocket events"
 **Files:**
 - Create: `src/filters/ws-exception.filter.ts`
 
+**Note:** Per NestJS docs, the recommended pattern is to extend `BaseWsExceptionFilter` and delegate unhandled exceptions to `super.catch()`. This filter catches all exceptions, logs them, then sends a structured error to the client and falls back to default handling for non-`WsException` errors.
+
 **Step 1: Create WebSocket exception filter**
 
 Create `src/filters/ws-exception.filter.ts`:
 
 ```typescript
-import { Catch, ArgumentsHost, BadRequestException } from '@nestjs/common';
+import { Catch, ArgumentsHost } from '@nestjs/common';
 import { BaseWsExceptionFilter, WsException } from '@nestjs/websockets';
 
 @Catch()
 export class WsExceptionFilter extends BaseWsExceptionFilter {
-  catch(exception: Error, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost) {
     const client = host.switchToWs().getClient();
-    const data = host.switchToWs().getData();
 
-    let errorMessage = 'Internal server error';
-    let errorCode = 'error:server';
+    if (exception instanceof WsException) {
+      const error = exception.getError();
+      const message = typeof error === 'string' ? error : (error as any).message ?? 'WebSocket error';
 
-    if (exception instanceof BadRequestException) {
-      errorCode = 'error:validation';
-      errorMessage = exception.getResponse()['message'] || exception.message;
-    } else if (exception instanceof WsException) {
-      errorCode = 'error:business';
-      errorMessage = exception.getError() as string;
-    } else if (exception.message) {
-      errorMessage = exception.message;
+      console.error(`[WebSocket Error] ${message}`);
+
+      client.emit('error', {
+        status: 'error',
+        message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
     }
 
-    console.error(`[WebSocket Error] ${errorCode}: ${errorMessage}`, exception.stack);
-
-    client.emit('error', {
-      code: errorCode,
-      message: errorMessage,
-      timestamp: new Date().toISOString(),
-    });
+    // For any non-WsException, log and delegate to base filter
+    const err = exception as Error;
+    console.error(`[WebSocket Error] Unexpected:`, err?.stack ?? err);
+    super.catch(exception, host);
   }
 }
 ```
@@ -769,6 +838,7 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { UseFilters, UseInterceptors, UsePipes } from '@nestjs/common';
@@ -776,15 +846,15 @@ import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
 import { WsExceptionFilter } from '../filters/ws-exception.filter';
 import { LoggingInterceptor } from '../interceptors/logging.interceptor';
-import { JoinRoomPipe, SendMessagePipe, TypingPipe } from '../pipes/index';
+import { JoinRoomPipe, SendMessagePipe, TypingPipe } from '../pipes';
 
 @WebSocketGateway({
   cors: {
     origin: '*',
   },
 })
-@UseFilters(WsExceptionFilter)
-@UseInterceptors(LoggingInterceptor)
+@UseFilters(new WsExceptionFilter())
+@UseInterceptors(new LoggingInterceptor())
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -805,46 +875,45 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('room:join')
-  @UsePipes(JoinRoomPipe)
+  @UsePipes(new JoinRoomPipe())
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { roomId: number; userId: string },
   ) {
     const { roomId, userId } = data;
 
-    // Validate room exists
     const room = await this.roomService.getRoomById(roomId);
     if (!room) {
-      throw new Error('Room not found');
+      throw new WsException('Room not found');
     }
 
-    // Add user to room
     await this.chatService.addUserToRoom(roomId, userId);
     client.join(`room-${roomId}`);
 
-    // Notify room members
     this.server.to(`room-${roomId}`).emit('user:joined', {
       userId,
       timestamp: new Date().toISOString(),
     });
 
-    // Send updated user list
     const users = await this.chatService.getUsersInRoom(roomId);
     this.server.to(`room-${roomId}`).emit('users:list', users);
   }
 
   @SubscribeMessage('message:send')
-  @UsePipes(SendMessagePipe)
+  @UsePipes(new SendMessagePipe())
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { roomId: number; userId: string; text: string },
   ) {
     const { roomId, userId, text } = data;
 
-    // Save message to database
+    const room = await this.roomService.getRoomById(roomId);
+    if (!room) {
+      throw new WsException('Room not found');
+    }
+
     const message = await this.chatService.saveMessage(roomId, userId, text);
 
-    // Broadcast to room members
     this.server.to(`room-${roomId}`).emit('message:new', {
       id: message.id,
       roomId,
@@ -855,17 +924,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('typing:start')
-  @UsePipes(TypingPipe)
+  @UsePipes(new TypingPipe())
   async handleTypingStart(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { roomId: number; userId: string },
   ) {
     const { roomId, userId } = data;
 
-    // Mark user as typing (in-memory, no broadcast yet)
     await this.chatService.markUserTyping(roomId, userId);
 
-    // Notify others in room that user is typing
     client.to(`room-${roomId}`).emit('user:typing', {
       userId,
       timestamp: new Date().toISOString(),
@@ -873,17 +940,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('typing:stop')
-  @UsePipes(TypingPipe)
+  @UsePipes(new TypingPipe())
   async handleTypingStop(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { roomId: number; userId: string },
   ) {
     const { roomId, userId } = data;
 
-    // Remove user from typing status
     await this.chatService.removeUserTyping(roomId, userId);
 
-    // Notify others in room
     client.to(`room-${roomId}`).emit('user:typing-stopped', {
       userId,
       timestamp: new Date().toISOString(),
@@ -891,23 +956,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('room:leave')
+  @UsePipes(new JoinRoomPipe())
   async handleLeaveRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { roomId: number; userId: string },
   ) {
     const { roomId, userId } = data;
 
-    // Remove user from room
     await this.chatService.removeUserFromRoom(roomId, userId);
     client.leave(`room-${roomId}`);
 
-    // Notify room members
     this.server.to(`room-${roomId}`).emit('user:left', {
       userId,
       timestamp: new Date().toISOString(),
     });
 
-    // Send updated user list
     const users = await this.chatService.getUsersInRoom(roomId);
     this.server.to(`room-${roomId}`).emit('users:list', users);
   }
