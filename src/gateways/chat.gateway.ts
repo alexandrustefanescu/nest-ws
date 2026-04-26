@@ -135,8 +135,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() _client: Socket,
     @MessageBody() data: { roomId: number },
   ) {
-    const roomId = Number(data?.roomId);
-    if (!roomId) {
+    const roomId = typeof data?.roomId === 'number' && Number.isInteger(data.roomId) && data.roomId > 0
+      ? data.roomId
+      : null;
+    if (roomId === null) {
       throw new WsException('roomId is required');
     }
     const room = await this.roomService.getRoomById(roomId);

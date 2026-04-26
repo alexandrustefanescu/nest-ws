@@ -45,6 +45,34 @@ export class ChatSocketService {
 
     this.socket.on('rooms:list', (rooms: Room[]) => {
       this.rooms.set(rooms);
+      const liveIds = new Set(rooms.map((r) => r.id));
+      this.roomMessages.update((prev) => {
+        const next: Record<number, Message[]> = {};
+        for (const id of Object.keys(prev)) {
+          if (liveIds.has(Number(id))) next[Number(id)] = prev[Number(id)];
+        }
+        return next;
+      });
+      this.roomUsers.update((prev) => {
+        const next: Record<number, RoomUser[]> = {};
+        for (const id of Object.keys(prev)) {
+          if (liveIds.has(Number(id))) next[Number(id)] = prev[Number(id)];
+        }
+        return next;
+      });
+      this.typingUsers.update((prev) => {
+        const next: Record<number, Set<string>> = {};
+        for (const id of Object.keys(prev)) {
+          if (liveIds.has(Number(id))) next[Number(id)] = prev[Number(id)];
+        }
+        return next;
+      });
+      for (const id of this.typingTimers.keys()) {
+        if (!liveIds.has(id)) {
+          this.clearTypingTimer(id);
+          this.typingActive.delete(id);
+        }
+      }
     });
 
     this.socket.on('users:list', (users: RoomUser[]) => {
