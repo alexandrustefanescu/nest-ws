@@ -16,6 +16,8 @@ import { WsExceptionFilter } from '../filters/ws-exception.filter';
 import { LoggingInterceptor } from '../interceptors/logging.interceptor';
 import { JoinRoomPipe, SendMessagePipe, TypingPipe } from '../pipes';
 
+const ALLOWED_REACTIONS = new Set(['👍', '❤️', '😂', '😮', '😢', '🔥']);
+
 @WebSocketGateway({ cors: { origin: '*' } })
 @UseFilters(new WsExceptionFilter())
 @UseInterceptors(new LoggingInterceptor())
@@ -60,6 +62,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const users = await this.chatService.getUsersInRoom(roomId);
     this.server.to(`room-${roomId}`).emit('users:list', users);
+
+    const snapshot = await this.chatService.getReactionsForRoom(roomId);
+    client.emit('reactions:snapshot', snapshot);
   }
 
   @SubscribeMessage('message:send')
@@ -149,6 +154,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.roomService.deleteRoom(roomId);
     const allRooms = await this.roomService.getAllRooms();
     this.server.emit('rooms:list', allRooms);
+  }
+
+  @SubscribeMessage('reaction:toggle')
+  async handleToggleReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomId: number; messageId: number; userId: string; emoji: string },
+  ) {
+    const { roomId, messageId, userId, emoji } = data ?? {};
+    if (!ALLOWED_REACTIONS.has(emoji)) {
+      throw new WsException('Invalid emoji');
+    }
+    const reactions = await this.chatService.toggleReaction(messageId, userId, emoji);
+    this.server.to(`room-${roomId}`).emit('reaction:updated', { messageId, reactions });
   }
 
   @SubscribeMessage('room:leave')

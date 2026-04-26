@@ -31,6 +31,8 @@ describe('ChatGateway', () => {
     markUserTyping: jest.Mock;
     removeUserTyping: jest.Mock;
     clearRoomData: jest.Mock;
+    toggleReaction: jest.Mock;
+    getReactionsForRoom: jest.Mock;
   };
   let mockRoomService: {
     getAllRooms: jest.Mock;
@@ -47,6 +49,8 @@ describe('ChatGateway', () => {
       markUserTyping: jest.fn(),
       removeUserTyping: jest.fn(),
       clearRoomData: jest.fn(),
+      toggleReaction: jest.fn(),
+      getReactionsForRoom: jest.fn().mockResolvedValue({}),
     };
 
     mockRoomService = {
@@ -161,5 +165,46 @@ describe('ChatGateway', () => {
     expect(mockChatService.clearRoomData).toHaveBeenCalledWith(1);
     expect(mockRoomService.deleteRoom).toHaveBeenCalledWith(1);
     expect(mockServer.emit).toHaveBeenCalledWith('rooms:list', []);
+  });
+
+  it('should emit reactions:snapshot on room join', async () => {
+    const room = { id: 1, name: 'general', createdAt: new Date() };
+    mockRoomService.getRoomById.mockResolvedValue(room);
+    mockChatService.addUserToRoom.mockResolvedValue({});
+    mockChatService.getUsersInRoom.mockResolvedValue([]);
+    mockChatService.getReactionsForRoom.mockResolvedValue({ 1: { '👍': ['u1'] } });
+
+    await gateway.handleJoinRoom(mockSocket, { roomId: 1, userId: 'user1' });
+
+    expect(mockSocket.emit).toHaveBeenCalledWith('reactions:snapshot', { 1: { '👍': ['u1'] } });
+  });
+
+  it('should toggle reaction and broadcast reaction:updated', async () => {
+    mockChatService.toggleReaction.mockResolvedValue({ '👍': ['u1'] });
+
+    await gateway.handleToggleReaction(mockSocket, {
+      roomId: 1,
+      messageId: 42,
+      userId: 'u1',
+      emoji: '👍',
+    });
+
+    expect(mockChatService.toggleReaction).toHaveBeenCalledWith(42, 'u1', '👍');
+    expect(mockServer.to).toHaveBeenCalledWith('room-1');
+    expect(mockTo.emit).toHaveBeenCalledWith('reaction:updated', {
+      messageId: 42,
+      reactions: { '👍': ['u1'] },
+    });
+  });
+
+  it('should throw WsException for invalid emoji', async () => {
+    await expect(
+      gateway.handleToggleReaction(mockSocket, {
+        roomId: 1,
+        messageId: 1,
+        userId: 'u1',
+        emoji: '💀',
+      }),
+    ).rejects.toThrow(WsException);
   });
 });
