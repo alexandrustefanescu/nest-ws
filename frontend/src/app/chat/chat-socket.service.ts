@@ -67,7 +67,7 @@ export class ChatSocketService {
         }
         return next;
       });
-      for (const id of this.typingTimers.keys()) {
+      for (const id of [...this.typingTimers.keys()]) {
         if (!liveIds.has(id)) {
           this.clearTypingTimer(id);
           this.typingActive.delete(id);
