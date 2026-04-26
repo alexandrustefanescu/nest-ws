@@ -47,6 +47,12 @@ export const SocketEvents = {
   USER_TYPING_STOPPED: 'user:typing-stopped',
   REACTIONS_SNAPSHOT: 'reactions:snapshot',
   REACTION_UPDATED: 'reaction:updated',
+  MESSAGES_HISTORY: 'messages:history',
+  MESSAGES_LOAD_MORE: 'messages:load-more',
+  MESSAGE_DELETE: 'message:delete',
+  MESSAGE_DELETED: 'message:deleted',
+  CHAT_CLEAR: 'chat:clear',
+  CHAT_CLEARED: 'chat:cleared',
 } as const;
 
 export type SocketEventName = (typeof SocketEvents)[keyof typeof SocketEvents];
