@@ -118,6 +118,14 @@ export interface GroupedMessage {
           <span class="presence-dot" aria-hidden="true"></span>
           {{ users().length }} online
         </div>
+        <button
+          (click)="onClearChat()"
+          style="background:none;border:none;cursor:pointer;color:var(--text-faint);display:flex;align-items:center;padding:4px"
+          aria-label="Clear chat"
+          title="Clear chat"
+        >
+          <mat-icon style="font-size:18px;width:18px;height:18px">delete_sweep</mat-icon>
+        </button>
       </header>
 
       <div
@@ -128,7 +136,13 @@ export interface GroupedMessage {
         aria-live="polite"
         aria-relevant="additions"
         aria-label="Messages"
+        (scroll)="onScroll($event)"
       >
+        @if (isLoadingMore()) {
+          <div style="display:flex;justify-content:center;padding:8px">
+            <mat-spinner diameter="20" />
+          </div>
+        }
         @if (enrichedMessages().length === 0) {
           <div class="empty-messages">No messages yet — say hi!</div>
         }
@@ -194,6 +208,9 @@ export class RoomPage implements OnInit, OnDestroy, AfterViewChecked {
     }));
   });
 
+  readonly hasMore = computed(() => this.chat.roomHasMore()[this.roomId()] ?? false);
+  readonly isLoadingMore = this.chat.isLoadingMore;
+
   ngOnInit(): void {
     this.chat.joinRoom(this.roomId());
   }
@@ -219,6 +236,22 @@ export class RoomPage implements OnInit, OnDestroy, AfterViewChecked {
       this.chat.typingStart(this.roomId());
     } else {
       this.chat.typingStop(this.roomId());
+    }
+  }
+
+  onScroll(event: Event): void {
+    const el = event.target as HTMLElement;
+    if (el.scrollTop === 0 && this.hasMore() && !this.isLoadingMore()) {
+      const msgs = this.messages();
+      if (msgs.length > 0) {
+        this.chat.loadMoreMessages(this.roomId(), msgs[0].id);
+      }
+    }
+  }
+
+  onClearChat(): void {
+    if (confirm('Clear all messages for everyone? This cannot be undone.')) {
+      this.chat.clearChat(this.roomId());
     }
   }
 
