@@ -30,10 +30,12 @@ describe('ChatGateway', () => {
     removeUserFromRoom: jest.Mock;
     markUserTyping: jest.Mock;
     removeUserTyping: jest.Mock;
+    clearRoomData: jest.Mock;
   };
   let mockRoomService: {
     getAllRooms: jest.Mock;
     getRoomById: jest.Mock;
+    deleteRoom: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -44,11 +46,13 @@ describe('ChatGateway', () => {
       removeUserFromRoom: jest.fn(),
       markUserTyping: jest.fn(),
       removeUserTyping: jest.fn(),
+      clearRoomData: jest.fn(),
     };
 
     mockRoomService = {
       getAllRooms: jest.fn().mockResolvedValue([]),
       getRoomById: jest.fn(),
+      deleteRoom: jest.fn(),
     };
 
     jest.clearAllMocks();
@@ -135,5 +139,27 @@ describe('ChatGateway', () => {
 
     expect(mockSocket.leave).toHaveBeenCalledWith('room-1');
     expect(mockChatService.removeUserFromRoom).toHaveBeenCalledWith(1, 'user1');
+  });
+
+  it('should throw WsException when deleting non-existent room', async () => {
+    mockRoomService.getRoomById.mockResolvedValue(null);
+
+    await expect(
+      gateway.handleDeleteRoom(mockSocket, { roomId: 99 }),
+    ).rejects.toThrow(WsException);
+  });
+
+  it('should delete room, clear data and broadcast rooms list', async () => {
+    const room = { id: 1, name: 'general', createdAt: new Date() };
+    mockRoomService.getRoomById.mockResolvedValue(room);
+    mockChatService.clearRoomData.mockResolvedValue(undefined);
+    mockRoomService.deleteRoom.mockResolvedValue(undefined);
+    mockRoomService.getAllRooms.mockResolvedValue([]);
+
+    await gateway.handleDeleteRoom(mockSocket, { roomId: 1 });
+
+    expect(mockChatService.clearRoomData).toHaveBeenCalledWith(1);
+    expect(mockRoomService.deleteRoom).toHaveBeenCalledWith(1);
+    expect(mockServer.emit).toHaveBeenCalledWith('rooms:list', []);
   });
 });

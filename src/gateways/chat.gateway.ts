@@ -115,6 +115,40 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  @SubscribeMessage('room:create')
+  async handleCreateRoom(
+    @ConnectedSocket() _client: Socket,
+    @MessageBody() data: { name: string },
+  ) {
+    const name = (data?.name ?? '').trim();
+    if (!name) {
+      throw new WsException('Room name is required');
+    }
+    const room = await this.roomService.createRoom(name);
+    const allRooms = await this.roomService.getAllRooms();
+    this.server.emit('rooms:list', allRooms);
+    return room;
+  }
+
+  @SubscribeMessage('room:delete')
+  async handleDeleteRoom(
+    @ConnectedSocket() _client: Socket,
+    @MessageBody() data: { roomId: number },
+  ) {
+    const roomId = Number(data?.roomId);
+    if (!roomId) {
+      throw new WsException('roomId is required');
+    }
+    const room = await this.roomService.getRoomById(roomId);
+    if (!room) {
+      throw new WsException('Room not found');
+    }
+    await this.chatService.clearRoomData(roomId);
+    await this.roomService.deleteRoom(roomId);
+    const allRooms = await this.roomService.getAllRooms();
+    this.server.emit('rooms:list', allRooms);
+  }
+
   @SubscribeMessage('room:leave')
   async handleLeaveRoom(
     @ConnectedSocket() client: Socket,
