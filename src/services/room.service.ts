@@ -22,4 +22,8 @@ export class RoomService {
     const room = this.roomRepository.create({ name });
     return this.roomRepository.save(room);
   }
+
+  async deleteRoom(id: number): Promise<void> {
+    await this.roomRepository.delete({ id });
+  }
 }

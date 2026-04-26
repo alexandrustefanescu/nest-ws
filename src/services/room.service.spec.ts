@@ -10,6 +10,7 @@ describe('RoomService', () => {
     findOne: jest.Mock;
     create: jest.Mock;
     save: jest.Mock;
+    delete: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -18,6 +19,7 @@ describe('RoomService', () => {
       findOne: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
+      delete: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -71,5 +73,13 @@ describe('RoomService', () => {
     expect(result).toEqual(mockRoom);
     expect(mockRoomRepository.create).toHaveBeenCalledWith({ name: 'new-room' });
     expect(mockRoomRepository.save).toHaveBeenCalledWith(mockRoom);
+  });
+
+  it('should delete a room', async () => {
+    mockRoomRepository.delete.mockResolvedValue({ affected: 1 });
+
+    await service.deleteRoom(1);
+
+    expect(mockRoomRepository.delete).toHaveBeenCalledWith({ id: 1 });
   });
 });
