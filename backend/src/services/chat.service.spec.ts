@@ -17,6 +17,7 @@ describe('ChatService', () => {
   };
   let mockRoomUserRepository: {
     find: jest.Mock;
+    findOne: jest.Mock;
     create: jest.Mock;
     save: jest.Mock;
     delete: jest.Mock;
