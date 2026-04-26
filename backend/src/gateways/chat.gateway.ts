@@ -9,9 +9,10 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { OnModuleInit, UseFilters, UseInterceptors } from '@nestjs/common';
+import { OnModuleInit, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
+import { WsThrottlerGuard, WsThrottle } from '../guards/ws-throttler.guard';
 import { WsExceptionFilter } from '../filters/ws-exception.filter';
 import { LoggingInterceptor } from '../interceptors/logging.interceptor';
 import { JoinRoomPipe, SendMessagePipe, TypingPipe } from '../pipes';
@@ -40,6 +41,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   constructor(
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
+    private readonly wsThrottlerGuard: WsThrottlerGuard,
   ) {}
 
   async onModuleInit() {
@@ -65,8 +67,11 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
         await this.emitUserLeft(roomId, userId);
       }
     }
+    this.wsThrottlerGuard.evict(client.id);
   }
 
+  @WsThrottle(10, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('room:join')
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
@@ -104,6 +109,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     });
   }
 
+  @WsThrottle(20, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('message:send')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
@@ -127,6 +134,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     });
   }
 
+  @WsThrottle(60, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('typing:start')
   async handleTypingStart(
     @ConnectedSocket() client: Socket,
@@ -142,6 +151,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     });
   }
 
+  @WsThrottle(60, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('typing:stop')
   async handleTypingStop(
     @ConnectedSocket() client: Socket,
@@ -157,6 +168,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     });
   }
 
+  @WsThrottle(5, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('room:create')
   async handleCreateRoom(
     @ConnectedSocket() _client: Socket,
@@ -172,6 +185,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     return room;
   }
 
+  @WsThrottle(5, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('room:delete')
   async handleDeleteRoom(
     @ConnectedSocket() _client: Socket,
@@ -193,6 +208,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     this.server.emit('rooms:list', allRooms);
   }
 
+  @WsThrottle(30, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('reaction:toggle')
   async handleToggleReaction(
     @ConnectedSocket() client: Socket,
@@ -206,6 +223,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     this.server.to(`room-${roomId}`).emit('reaction:updated', { messageId, reactions });
   }
 
+  @WsThrottle(10, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('room:leave')
   async handleLeaveRoom(
     @ConnectedSocket() client: Socket,
@@ -220,6 +239,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     }
   }
 
+  @WsThrottle(20, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('messages:load-more')
   async handleLoadMore(
     @MessageBody() data: { roomId: number; before: number },
@@ -230,6 +251,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     return { messages, hasMore: messages.length === 50 };
   }
 
+  @WsThrottle(20, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('message:delete')
   async handleDeleteMessage(
     @ConnectedSocket() client: Socket,
@@ -240,6 +263,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     this.server.to(`room-${roomId}`).emit('message:deleted', { roomId, messageId });
   }
 
+  @WsThrottle(10, 60000)
+  @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('chat:clear')
   async handleClearChat(
     @ConnectedSocket() client: Socket,

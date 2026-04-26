@@ -13,6 +13,7 @@ import { AppController } from './app.controller';
 import { WsDocsController } from './controllers/ws-docs.controller';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { WsThrottlerGuard } from './guards/ws-throttler.guard';
 
 import { RoomsController } from './controllers/rooms.controller';
 
@@ -35,6 +36,7 @@ import { RoomsController } from './controllers/rooms.controller';
     ChatService,
     RoomService,
     Reflector,
+    WsThrottlerGuard,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
