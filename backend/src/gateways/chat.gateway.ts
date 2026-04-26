@@ -22,7 +22,12 @@ const ALLOWED_REACTIONS = new Set(['👍', '❤️', '😂', '😮', '😢', '�
 type ClientRooms = Map<number, string>;
 type RoomUserSockets = Map<string, Set<string>>;
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({
+  cors: {
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
+    credentials: true,
+  },
+})
 @UseFilters(new WsExceptionFilter())
 @UseInterceptors(new LoggingInterceptor())
 export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGatewayDisconnect {

@@ -16,6 +16,12 @@ async function bootstrap() {
   await app.register(helmet);
   await app.register(fastifyCsrf);
 
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
+    methods: ['GET', 'POST', 'DELETE'],
+    credentials: true,
+  });
+
   const config = new DocumentBuilder()
     .setTitle('nest-ws Chat API')
     .setDescription('REST and WebSocket API for real-time chat rooms')
