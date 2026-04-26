@@ -137,21 +137,18 @@ export class MessageComposerComponent {
   }
 
   insertEmoji(emoji: string): void {
-    const el = this.textareaRef()?.nativeElement;
-    if (el) {
-      const start = el.selectionStart ?? el.value.length;
-      const end = el.selectionEnd ?? el.value.length;
-      const current = this.text();
-      this.text.set(current.slice(0, start) + emoji + current.slice(end));
-      setTimeout(() => {
-        el.selectionStart = el.selectionEnd = start + [...emoji].length;
-        el.focus();
-      });
-    } else {
-      this.text.update((v) => v + emoji);
-    }
+    const current = this.text();
+    this.text.set(current + emoji);
     this.showEmojiPanel.set(false);
     this.typingChanged.emit(true);
+
+    setTimeout(() => {
+      const el = this.textareaRef()?.nativeElement;
+      if (el) {
+        el.focus();
+        el.selectionStart = el.selectionEnd = current.length + 1;
+      }
+    }, 0);
   }
 
   onEnter(event: Event): void {

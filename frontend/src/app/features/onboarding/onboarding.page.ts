@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -107,7 +107,7 @@ import { IdentityService } from '../../chat/identity.service';
     </div>
   `,
 })
-export class OnboardingPage {
+export class OnboardingPage implements OnInit {
   private readonly identity = inject(IdentityService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -115,6 +115,13 @@ export class OnboardingPage {
   readonly form = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(1)]],
   });
+
+  ngOnInit(): void {
+    if (this.identity.userId()) {
+      this.router.navigate(['/']);
+      return;
+    }
+  }
 
   submit(): void {
     if (this.form.invalid) return;

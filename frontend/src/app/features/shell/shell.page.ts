@@ -407,11 +407,17 @@ import { ConnectionBannerComponent } from './connection-banner.component';
                 </div>
               }
 
-              @if (chat.rooms().length === 0 && !showNewRoom()) {
-                <div class="empty-rooms">
-                  No rooms yet —
-                  <button class="accent-link" style="background:none;border:none;cursor:pointer;padding:0;font-size:inherit;" (click)="toggleNewRoom()">create one</button>
-                </div>
+              @if (chat.rooms().length === 0) {
+                @if (chat.connectionState() === 'connected' && !showNewRoom()) {
+                  <div class="empty-rooms">
+                    No rooms yet —
+                    <button class="accent-link" style="background:none;border:none;cursor:pointer;padding:0;font-size:inherit;" (click)="toggleNewRoom()">create one</button>
+                  </div>
+                } @else if (chat.connectionState() !== 'connected') {
+                  <div class="empty-rooms">
+                    Connecting…
+                  </div>
+                }
               }
             </div>
 

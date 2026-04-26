@@ -13,6 +13,8 @@ import { AppController } from './app.controller';
 import { WsDocsController } from './controllers/ws-docs.controller';
 import { ThrottlerModule } from '@nestjs/throttler';
 
+import { RoomsController } from './controllers/rooms.controller';
+
 @Module({
   imports: [
     TypeOrmModule.forRoot(databaseConfig),
@@ -26,7 +28,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
       ],
     }),
   ],
-  controllers: [AppController, WsDocsController],
+  controllers: [AppController, WsDocsController, RoomsController],
   providers: [ChatGateway, ChatService, RoomService],
 })
 export class AppModule {}

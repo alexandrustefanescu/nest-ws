@@ -205,9 +205,11 @@ export class MessageBubbleComponent {
   readonly time = computed(() =>
     new Date(this.message().createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   );
-  readonly hasReactions = computed(() => Object.keys(this.reactions()).length > 0);
-  readonly reactionEntries = computed(() =>
-    Object.entries(this.reactions()).map(([emoji, users]) => ({
+  readonly hasReactions = computed(() => 
+    Object.keys(this.reactions() ?? {}).length > 0
+  );
+  readonly reactionEntries = computed(() => 
+    Object.entries(this.reactions() ?? {}).map(([emoji, users]) => ({
       emoji,
       count: users.length,
       isMine: users.includes(this.currentUserId()),
