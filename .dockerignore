@@ -15,4 +15,4 @@ docs/
 *.log
 .DS_Store
 Thumbs.db
-pnpm-workspace.yaml
+frontend/
