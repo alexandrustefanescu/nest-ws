@@ -13,6 +13,7 @@ describe('ChatService', () => {
     save: jest.Mock;
     delete: jest.Mock;
     find: jest.Mock;
+    findOne: jest.Mock;
   };
   let mockRoomUserRepository: {
     find: jest.Mock;
@@ -36,7 +37,7 @@ describe('ChatService', () => {
   };
 
   beforeEach(async () => {
-    mockMessageRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn() };
+    mockMessageRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn(), findOne: jest.fn() };
     mockRoomUserRepository = { find: jest.fn(), findOne: jest.fn(), create: jest.fn(), save: jest.fn(), delete: jest.fn() };
     mockTypingStatusRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn() };
     mockReactionRepository = {
@@ -208,6 +209,31 @@ describe('ChatService', () => {
           take: 50,
         }),
       );
+    });
+  });
+
+  describe('deleteMessage', () => {
+    it('deletes the message when userId matches author', async () => {
+      const msg = { id: 5, roomId: 1, userId: 'u1', text: 'hi', createdAt: new Date() };
+      mockMessageRepository.findOne.mockResolvedValue(msg);
+      mockMessageRepository.delete.mockResolvedValue({ affected: 1 });
+
+      await service.deleteMessage(5, 'u1');
+
+      expect(mockMessageRepository.delete).toHaveBeenCalledWith({ id: 5 });
+    });
+
+    it('throws WsException when message not found', async () => {
+      mockMessageRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.deleteMessage(99, 'u1')).rejects.toThrow('Not found');
+    });
+
+    it('throws WsException when userId is not the author', async () => {
+      const msg = { id: 5, roomId: 1, userId: 'author', text: 'hi', createdAt: new Date() };
+      mockMessageRepository.findOne.mockResolvedValue(msg);
+
+      await expect(service.deleteMessage(5, 'other-user')).rejects.toThrow('Forbidden');
     });
   });
 

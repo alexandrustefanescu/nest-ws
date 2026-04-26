@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { WsException } from '@nestjs/websockets';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { Message } from '../entities/message.entity';
@@ -34,6 +35,17 @@ export class ChatService {
       take: limit,
     });
     return messages.reverse();
+  }
+
+  async deleteMessage(messageId: number, userId: string): Promise<void> {
+    const message = await this.messageRepository.findOne({ where: { id: messageId } });
+    if (!message) {
+      throw new WsException('Not found');
+    }
+    if (message.userId !== userId) {
+      throw new WsException('Forbidden');
+    }
+    await this.messageRepository.delete({ id: messageId });
   }
 
   async getUsersInRoom(roomId: number): Promise<RoomUser[]> {
