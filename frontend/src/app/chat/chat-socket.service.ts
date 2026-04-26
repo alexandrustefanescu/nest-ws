@@ -1,33 +1,69 @@
-import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject, signal, computed } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
 import { IdentityService } from './identity.service';
 import type { ConnectionState, Message, ReactionMap, Room, RoomUser } from './chat.models';
 
 const TYPING_DEBOUNCE_MS = 3000;
+const ROOMS_STORAGE_KEY = 'chat_rooms';
+
+function loadRoomsFromStorage(): Room[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(ROOMS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRoomsToStorage(rooms: Room[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(ROOMS_STORAGE_KEY, JSON.stringify(rooms));
+  } catch { /* empty */ }
+}
 
 @Injectable({ providedIn: 'root' })
 export class ChatSocketService {
-  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly http = inject(HttpClient);
   private readonly identity = inject(IdentityService);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   private socket: Socket | null = null;
   private typingTimers = new Map<number, ReturnType<typeof setTimeout>>();
   private typingActive = new Set<number>();
 
-  readonly connectionState = signal<ConnectionState>('connecting');
-  readonly rooms = signal<Room[]>([]);
+  readonly connectionState = signal<ConnectionState>('disconnected');
+  readonly rooms = signal<Room[]>(loadRoomsFromStorage());
   readonly currentRoomId = signal<number | null>(null);
   readonly roomUsers = signal<Record<number, RoomUser[]>>({});
   readonly roomMessages = signal<Record<number, Message[]>>({});
   readonly typingUsers = signal<Record<number, Set<string>>>({});
   readonly roomReactions = signal<Record<number, ReactionMap>>({});
+  readonly roomHasMore = signal<Record<number, boolean>>({});
+  readonly isLoadingMore = signal(false);
 
   constructor() {
     if (this.isBrowser) {
+      this.fetchRoomsFromApi();
       this.connect();
     }
+  }
+
+  private fetchRoomsFromApi(): void {
+    this.http.get<Room[]>(`${environment.apiUrl}/api/rooms`).subscribe({
+      next: (rooms) => {
+        this.rooms.set(rooms);
+        saveRoomsToStorage(rooms);
+      },
+      error: () => {
+        // keep cached rooms on API failure
+      },
+    });
   }
 
   private connect(): void {
@@ -46,6 +82,7 @@ export class ChatSocketService {
 
     this.socket.on('rooms:list', (rooms: Room[]) => {
       this.rooms.set(rooms);
+      saveRoomsToStorage(rooms);
       const liveIds = new Set(rooms.map((r) => r.id));
       this.roomMessages.update((prev) => {
         const next: Record<number, Message[]> = {};
@@ -128,6 +165,28 @@ export class ChatSocketService {
         [data.messageId]: data.reactions,
       }));
     });
+
+    this.socket.on('messages:history', (data: { roomId: number; messages: Message[]; hasMore: boolean }) => {
+      this.roomMessages.update((prev) => ({ ...prev, [data.roomId]: data.messages }));
+      this.roomHasMore.update((prev) => ({ ...prev, [data.roomId]: data.hasMore }));
+    });
+
+    this.socket.on('message:deleted', (data: { roomId: number; messageId: number }) => {
+      this.roomMessages.update((prev) => ({
+        ...prev,
+        [data.roomId]: (prev[data.roomId] ?? []).filter((m) => m.id !== data.messageId),
+      }));
+      this.roomReactions.update((prev) => {
+        const next = { ...prev };
+        delete next[data.messageId];
+        return next;
+      });
+    });
+
+    this.socket.on('chat:cleared', (data: { roomId: number }) => {
+      this.roomMessages.update((prev) => ({ ...prev, [data.roomId]: [] }));
+      this.roomReactions.set({});
+    });
   }
 
   joinRoom(roomId: number): void {
@@ -172,6 +231,31 @@ export class ChatSocketService {
       this.typingActive.delete(roomId);
       this.socket?.emit('typing:stop', { roomId, userId: this.identity.userId() });
     }
+  }
+
+  loadMoreMessages(roomId: number, before: number): void {
+    if (this.isLoadingMore()) return;
+    this.isLoadingMore.set(true);
+    this.socket?.emit(
+      'messages:load-more',
+      { roomId, before },
+      (res: { messages: Message[]; hasMore: boolean }) => {
+        this.roomMessages.update((prev) => ({
+          ...prev,
+          [roomId]: [...res.messages, ...(prev[roomId] ?? [])],
+        }));
+        this.roomHasMore.update((prev) => ({ ...prev, [roomId]: res.hasMore }));
+        this.isLoadingMore.set(false);
+      },
+    );
+  }
+
+  deleteMessage(roomId: number, messageId: number): void {
+    this.socket?.emit('message:delete', { roomId, messageId, userId: this.identity.userId() });
+  }
+
+  clearChat(roomId: number): void {
+    this.socket?.emit('chat:clear', { roomId, userId: this.identity.userId() });
   }
 
   private resetTypingTimer(roomId: number): void {
