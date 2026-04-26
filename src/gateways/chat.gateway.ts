@@ -9,7 +9,7 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UseFilters, UseInterceptors, UsePipes } from '@nestjs/common';
+import { UseFilters, UseInterceptors } from '@nestjs/common';
 import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
 import { WsExceptionFilter } from '../filters/ws-exception.filter';
@@ -39,10 +39,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('room:join')
-  @UsePipes(new JoinRoomPipe())
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: number; userId: string },
+    @MessageBody(new JoinRoomPipe()) data: { roomId: number; userId: string },
   ) {
     const { roomId, userId } = data;
 
@@ -64,10 +63,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('message:send')
-  @UsePipes(new SendMessagePipe())
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: number; userId: string; text: string },
+    @MessageBody(new SendMessagePipe()) data: { roomId: number; userId: string; text: string },
   ) {
     const { roomId, userId, text } = data;
 
@@ -88,10 +86,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('typing:start')
-  @UsePipes(new TypingPipe())
   async handleTypingStart(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: number; userId: string },
+    @MessageBody(new TypingPipe()) data: { roomId: number; userId: string },
   ) {
     const { roomId, userId } = data;
 
@@ -104,10 +101,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('typing:stop')
-  @UsePipes(new TypingPipe())
   async handleTypingStop(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: number; userId: string },
+    @MessageBody(new TypingPipe()) data: { roomId: number; userId: string },
   ) {
     const { roomId, userId } = data;
 
@@ -120,10 +116,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('room:leave')
-  @UsePipes(new JoinRoomPipe())
   async handleLeaveRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: number; userId: string },
+    @MessageBody(new JoinRoomPipe()) data: { roomId: number; userId: string },
   ) {
     const { roomId, userId } = data;
 
