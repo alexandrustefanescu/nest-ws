@@ -7,11 +7,11 @@ import { Message } from './modules/messaging/message.entity';
 import { TypingStatus } from './modules/presence/typing-status.entity';
 import { MessageReaction } from './modules/messaging/message-reaction.entity';
 import { ChatGateway } from './gateways/chat.gateway';
-import { ChatService } from './services/chat.service';
 import { RoomService } from './services/room.service';
 import { MessagesService } from './modules/messaging/messages.service';
 import { ReactionsService } from './modules/messaging/reactions.service';
 import { PresenceService } from './modules/presence/presence.service';
+import { TypingService } from './modules/presence/typing.service';
 import { AppController } from './app.controller';
 import { WsDocsController } from './controllers/ws-docs.controller';
 import { APP_GUARD } from '@nestjs/core';
@@ -31,11 +31,11 @@ import { RoomsController } from './controllers/rooms.controller';
   controllers: [AppController, WsDocsController, RoomsController],
   providers: [
     ChatGateway,
-    ChatService,
     RoomService,
     MessagesService,
     ReactionsService,
     PresenceService,
+    TypingService,
     WsThrottlerGuard,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],

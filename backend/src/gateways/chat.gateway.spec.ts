@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatGateway } from './chat.gateway';
-import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
 import { MessagesService } from '../modules/messaging/messages.service';
 import { ReactionsService } from '../modules/messaging/reactions.service';
 import { PresenceService } from '../modules/presence/presence.service';
+import { TypingService } from '../modules/presence/typing.service';
 import { WsThrottlerGuard } from '../guards/ws-throttler.guard';
 import { WsException } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -27,16 +27,17 @@ const mockSocket = {
 
 describe('ChatGateway', () => {
   let gateway: ChatGateway;
-  let mockChatService: {
+  let mockTypingService: {
     markUserTyping: jest.Mock;
     removeUserTyping: jest.Mock;
-    clearRoomData: jest.Mock;
+    clearRoomTyping: jest.Mock;
   };
   let mockPresenceService: {
     getUsersInRoom: jest.Mock;
     addUserToRoom: jest.Mock;
     removeUserFromRoom: jest.Mock;
     clearPresence: jest.Mock;
+    clearRoomPresence: jest.Mock;
   };
   let mockReactionsService: {
     toggleReaction: jest.Mock;
@@ -58,10 +59,10 @@ describe('ChatGateway', () => {
   beforeEach(async () => {
     mockWsThrottlerGuard = { canActivate: jest.fn().mockReturnValue(true), evict: jest.fn() };
 
-    mockChatService = {
+    mockTypingService = {
       markUserTyping: jest.fn(),
       removeUserTyping: jest.fn(),
-      clearRoomData: jest.fn(),
+      clearRoomTyping: jest.fn(),
     };
 
     mockPresenceService = {
@@ -69,6 +70,7 @@ describe('ChatGateway', () => {
       addUserToRoom: jest.fn(),
       removeUserFromRoom: jest.fn(),
       clearPresence: jest.fn(),
+      clearRoomPresence: jest.fn(),
     };
 
     mockReactionsService = {
@@ -94,11 +96,11 @@ describe('ChatGateway', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChatGateway,
-        { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
         { provide: MessagesService, useValue: mockMessagesService },
         { provide: ReactionsService, useValue: mockReactionsService },
         { provide: PresenceService, useValue: mockPresenceService },
+        { provide: TypingService, useValue: mockTypingService },
         { provide: WsThrottlerGuard, useValue: mockWsThrottlerGuard },
       ],
     }).compile();
@@ -153,20 +155,20 @@ describe('ChatGateway', () => {
   });
 
   it('should mark typing and notify others', async () => {
-    mockChatService.markUserTyping.mockResolvedValue({});
+    mockTypingService.markUserTyping.mockResolvedValue({});
 
     await gateway.handleTypingStart(mockSocket, { roomId: 1, userId: 'user1' });
 
-    expect(mockChatService.markUserTyping).toHaveBeenCalledWith(1, 'user1');
+    expect(mockTypingService.markUserTyping).toHaveBeenCalledWith(1, 'user1');
     expect(mockSocket.to).toHaveBeenCalledWith('room-1');
   });
 
   it('should remove typing status on typing stop', async () => {
-    mockChatService.removeUserTyping.mockResolvedValue(undefined);
+    mockTypingService.removeUserTyping.mockResolvedValue(undefined);
 
     await gateway.handleTypingStop(mockSocket, { roomId: 1, userId: 'user1' });
 
-    expect(mockChatService.removeUserTyping).toHaveBeenCalledWith(1, 'user1');
+    expect(mockTypingService.removeUserTyping).toHaveBeenCalledWith(1, 'user1');
   });
 
   it('should remove user from room on leave', async () => {
@@ -228,13 +230,17 @@ describe('ChatGateway', () => {
   it('should delete room, clear data and broadcast rooms list', async () => {
     const room = { id: 1, name: 'general', createdAt: new Date() };
     mockRoomService.getRoomById.mockResolvedValue(room);
-    mockChatService.clearRoomData.mockResolvedValue(undefined);
+    mockMessagesService.clearRoomMessages.mockResolvedValue(undefined);
+    mockPresenceService.clearRoomPresence = jest.fn().mockResolvedValue(undefined);
+    mockTypingService.clearRoomTyping.mockResolvedValue(undefined);
     mockRoomService.deleteRoom.mockResolvedValue(undefined);
     mockRoomService.getAllRooms.mockResolvedValue([]);
 
     await gateway.handleDeleteRoom(mockSocket, { roomId: 1 });
 
-    expect(mockChatService.clearRoomData).toHaveBeenCalledWith(1);
+    expect(mockMessagesService.clearRoomMessages).toHaveBeenCalledWith(1);
+    expect(mockPresenceService.clearRoomPresence).toHaveBeenCalledWith(1);
+    expect(mockTypingService.clearRoomTyping).toHaveBeenCalledWith(1);
     expect(mockRoomService.deleteRoom).toHaveBeenCalledWith(1);
     expect(mockServer.emit).toHaveBeenCalledWith('rooms:list', []);
   });

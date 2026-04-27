@@ -10,11 +10,11 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { OnModuleInit, UseFilters, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
-import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
 import { MessagesService } from '../modules/messaging/messages.service';
 import { ReactionsService } from '../modules/messaging/reactions.service';
 import { PresenceService } from '../modules/presence/presence.service';
+import { TypingService } from '../modules/presence/typing.service';
 import { WsThrottlerGuard, WsThrottle } from '../guards/ws-throttler.guard';
 import { WsExceptionFilter } from '../filters/ws-exception.filter';
 import { LoggingInterceptor } from '../interceptors/logging.interceptor';
@@ -49,11 +49,11 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   private readonly roomUserSockets = new Map<number, RoomUserSockets>();
 
   constructor(
-    private readonly chatService: ChatService,
     private readonly roomService: RoomService,
     private readonly messagesService: MessagesService,
     private readonly reactionsService: ReactionsService,
     private readonly presenceService: PresenceService,
+    private readonly typingService: TypingService,
     private readonly wsThrottlerGuard: WsThrottlerGuard,
   ) {}
 
@@ -156,7 +156,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   ) {
     const { roomId, userId } = data;
 
-    await this.chatService.markUserTyping(roomId, userId);
+    await this.typingService.markUserTyping(roomId, userId);
 
     client.to(`room-${roomId}`).emit('user:typing', {
       userId,
@@ -173,7 +173,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   ) {
     const { roomId, userId } = data;
 
-    await this.chatService.removeUserTyping(roomId, userId);
+    await this.typingService.removeUserTyping(roomId, userId);
 
     client.to(`room-${roomId}`).emit('user:typing-stopped', {
       userId,
@@ -206,7 +206,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     if (!room) {
       throw new WsException('Room not found');
     }
-    await this.chatService.clearRoomData(roomId);
+    await this.messagesService.clearRoomMessages(roomId);
+    await this.presenceService.clearRoomPresence(roomId);
+    await this.typingService.clearRoomTyping(roomId);
     await this.roomService.deleteRoom(roomId);
     const allRooms = await this.roomService.getAllRooms();
     this.server.emit('rooms:list', allRooms);
