@@ -28,7 +28,7 @@ function userHue(id: string): number {
       color: oklch(72% 0.14 var(--user-hue));
     }
 
-    .bubble-row { display: flex; position: relative; }
+    .bubble-row { display: flex; position: relative; z-index: 1; }
     .bubble-row.own { justify-content: flex-end; }
     .bubble-row.other { justify-content: flex-start; }
 
@@ -61,7 +61,7 @@ function userHue(id: string): number {
     .timestamp.hidden { visibility: hidden; height: 0; margin: 0; overflow: hidden; }
 
     .msg-actions {
-      position: absolute; top: -18px;
+      position: absolute; top: -12px;
       display: flex; align-items: center; gap: 2px;
       padding: 2px 4px;
       background: var(--surface-1);
@@ -149,20 +149,19 @@ function userHue(id: string): number {
       </article>
 
       <div class="msg-actions">
-        @if (!isOwn()) {
-          <button
-            class="action-btn"
-            (click)="togglePicker()"
-            aria-label="Add reaction"
-            [attr.aria-expanded]="showPicker()"
-          >😊</button>
-        }
         @if (isOwn()) {
           <button
             class="action-btn danger"
             (click)="deleteMsg()"
             aria-label="Delete message"
           >🗑️</button>
+        } @else {
+          <button
+            class="action-btn"
+            (click)="togglePicker()"
+            aria-label="Add reaction"
+            [attr.aria-expanded]="showPicker()"
+          >😊</button>
         }
       </div>
 
