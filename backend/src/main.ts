@@ -59,6 +59,20 @@ async function bootstrap() {
     },
   });
 
+  const roomService = app.get('RoomService');
+  try {
+    const existingRooms = await roomService.getAllRooms();
+    if (existingRooms.length === 0) {
+      console.log('Seeding initial rooms...');
+      await roomService.createRoom('general');
+      await roomService.createRoom('random');
+      await roomService.createRoom('dev');
+      console.log('Seed complete!');
+    }
+  } catch (error) {
+    console.log('Rooms already exist or error during seed:', error.message);
+  }
+
   await app.listen(env.port, '0.0.0.0');
   console.log(`Application is running on: ${await app.getUrl()}`);
   console.log(`API docs available at: ${await app.getUrl()}/docs`);

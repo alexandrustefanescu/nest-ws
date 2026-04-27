@@ -6,6 +6,6 @@ export const databaseConfig: DataSourceOptions = {
   type: 'sqlite',
   database: env.databasePath,
   entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
-  synchronize: !env.isProduction,
+  synchronize: true,
   logging: env.isDevelopment,
 };
