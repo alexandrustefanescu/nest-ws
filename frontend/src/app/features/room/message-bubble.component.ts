@@ -4,6 +4,12 @@ import { ChatSocketService } from '../../core/chat/chat-socket.service';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
+function userHue(id: string): number {
+  let h = 5381;
+  for (let i = 0; i < id.length; i++) h = (h * 33) ^ id.charCodeAt(i);
+  return Math.abs(h) % 360;
+}
+
 @Component({
   selector: 'app-message-bubble',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -15,7 +21,11 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
     .author-label {
       font-size: 12px; line-height: 16px; font-weight: 500;
-      color: var(--text-muted); margin-bottom: 2px; padding-left: 4px;
+      color: oklch(38% 0.14 var(--user-hue));
+      margin-bottom: 2px; padding-left: 4px;
+    }
+    :where(.dark, .dark *) .author-label {
+      color: oklch(72% 0.14 var(--user-hue));
     }
 
     .bubble-row { display: flex; position: relative; }
@@ -33,8 +43,12 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
       border-bottom-right-radius: 4px;
     }
     .bubble.other {
-      background: var(--surface-2); color: var(--text-strong);
+      background: oklch(88% 0.07 var(--user-hue));
+      color: var(--text-strong);
       border-bottom-left-radius: 4px;
+    }
+    :where(.dark, .dark *) .bubble.other {
+      background: oklch(28% 0.09 var(--user-hue));
     }
 
     .bubble-text { margin: 0; }
@@ -124,13 +138,14 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
   `],
   template: `
     @if (!isOwn() && firstInGroup()) {
-      <p class="author-label">{{ message().userId }}</p>
+      <p class="author-label" [style]="authorStyle()">{{ message().userId }}</p>
     }
 
     <div class="bubble-row" [class]="isOwn() ? 'own' : 'other'">
       <article
         class="bubble"
         [class]="isOwn() ? 'own' : 'other'"
+        [style]="isOwn() ? null : otherBubbleStyle()"
         [attr.aria-label]="message().userId + ' at ' + time() + ': ' + message().text"
       >
         <p class="bubble-text">{{ message().text }}</p>
@@ -202,6 +217,17 @@ export class MessageBubbleComponent {
   readonly showPicker = signal(false);
 
   readonly isOwn = computed(() => this.message().userId === this.currentUserId());
+
+  readonly otherBubbleStyle = computed(() => {
+    if (this.isOwn()) return '';
+    const hue = userHue(this.message().userId);
+    return `--user-hue:${hue}`;
+  });
+
+  readonly authorStyle = computed(() => {
+    const hue = userHue(this.message().userId);
+    return `--user-hue:${hue}`;
+  });
   readonly time = computed(() =>
     new Date(this.message().createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   );
