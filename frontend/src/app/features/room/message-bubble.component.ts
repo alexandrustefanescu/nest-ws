@@ -60,22 +60,33 @@ function userHue(id: string): number {
     .bubble.other .timestamp { color: var(--text-faint); }
     .timestamp.hidden { visibility: hidden; height: 0; margin: 0; overflow: hidden; }
 
-    .reaction-trigger {
-      width: 24px; height: 24px; border-radius: 50%;
-      border: 1px solid var(--border-subtle);
+    .msg-actions {
+      position: absolute; top: -18px;
+      display: flex; align-items: center; gap: 2px;
+      padding: 2px 4px;
       background: var(--surface-1);
-      font-size: 13px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; align-self: center;
-      transition: background var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
-      padding: 0;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      box-shadow: 0 2px 8px oklch(0% 0 0 / 0.10);
       opacity: 0; pointer-events: none;
+      transition: opacity var(--dur-fast) var(--ease-out);
+      z-index: 10;
     }
-    .reaction-trigger:hover { background: var(--surface-2); }
-    .bubble-row:hover .reaction-trigger,
-    .bubble-row:focus-within .reaction-trigger { opacity: 1; pointer-events: auto; }
-    .bubble-row.own .reaction-trigger { order: -1; margin-right: 6px; }
-    .bubble-row.other .reaction-trigger { margin-left: 6px; }
+    .bubble-row.own .msg-actions { right: 0; }
+    .bubble-row.other .msg-actions { left: 0; }
+    .bubble-row:hover .msg-actions,
+    .bubble-row:focus-within .msg-actions { opacity: 1; pointer-events: auto; }
+
+    .action-btn {
+      width: 28px; height: 28px; border-radius: var(--radius-xs);
+      border: none; background: none; cursor: pointer; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0; color: var(--text-muted);
+      transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+    }
+    .action-btn:hover { background: var(--surface-2); color: var(--text-strong); }
+    .action-btn.danger:hover { background: oklch(95% 0.04 25); color: oklch(45% 0.18 25); }
+    :where(.dark, .dark *) .action-btn.danger:hover { background: oklch(22% 0.06 25); color: oklch(70% 0.18 25); }
 
     .reaction-picker {
       position: absolute; top: -4px; z-index: 50;
@@ -120,21 +131,6 @@ function userHue(id: string): number {
     }
     .reaction-pill:hover { opacity: 0.8; }
 
-    .delete-btn {
-      width: 24px; height: 24px; border-radius: 50%;
-      border: 1px solid var(--border-subtle);
-      background: var(--surface-1);
-      font-size: 13px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; align-self: center;
-      transition: background var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
-      padding: 0; color: var(--text-faint);
-      opacity: 0; pointer-events: none;
-    }
-    .delete-btn:hover { background: var(--surface-2); color: var(--text-strong); }
-    .bubble-row:hover .delete-btn,
-    .bubble-row:focus-within .delete-btn { opacity: 1; pointer-events: auto; }
-    .bubble-row.own .delete-btn { order: -2; margin-right: 4px; }
   `],
   template: `
     @if (!isOwn() && firstInGroup()) {
@@ -152,12 +148,23 @@ function userHue(id: string): number {
         <p class="timestamp" [class.hidden]="!lastInGroup()">{{ time() }}</p>
       </article>
 
-      <button
-        class="reaction-trigger"
-        (click)="togglePicker()"
-        aria-label="Add reaction"
-        [attr.aria-expanded]="showPicker()"
-      >😊</button>
+      <div class="msg-actions">
+        @if (!isOwn()) {
+          <button
+            class="action-btn"
+            (click)="togglePicker()"
+            aria-label="Add reaction"
+            [attr.aria-expanded]="showPicker()"
+          >😊</button>
+        }
+        @if (isOwn()) {
+          <button
+            class="action-btn danger"
+            (click)="deleteMsg()"
+            aria-label="Delete message"
+          >🗑️</button>
+        }
+      </div>
 
       @if (showPicker()) {
         <div
@@ -173,14 +180,6 @@ function userHue(id: string): number {
             >{{ emoji }}</button>
           }
         </div>
-      }
-
-      @if (isOwn()) {
-        <button
-          class="delete-btn"
-          (click)="deleteMsg()"
-          aria-label="Delete message"
-        >×</button>
       }
     </div>
 
