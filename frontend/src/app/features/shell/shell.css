@@ -226,6 +226,10 @@ mat-sidenav {
   padding: 8px;
 }
 
+.new-room-form mat-form-field {
+  width: 100%;
+}
+
 .empty-rooms {
   padding: 16px 12px;
   font-size: 12px;
@@ -237,6 +241,11 @@ mat-sidenav {
   color: var(--accent);
   text-decoration: none;
   font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
 }
 
 .accent-link:hover {
@@ -257,4 +266,15 @@ mat-sidenav {
 
 .create-room-btn:disabled {
   opacity: 0.45;
+}
+
+.sidenav-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidenav-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

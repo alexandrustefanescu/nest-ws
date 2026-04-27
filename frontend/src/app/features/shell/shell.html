@@ -49,7 +49,7 @@
     </div>
   </header>
 
-  <mat-sidenav-container style="flex:1;overflow:hidden;">
+  <mat-sidenav-container class="sidenav-container">
     <mat-sidenav
       #sidenav
       [mode]="isSmallScreen() ? 'over' : 'side'"
@@ -65,7 +65,6 @@
             class="ghost-btn"
             (click)="toggleNewRoom()"
             [attr.aria-label]="showNewRoom() ? 'Cancel new room' : 'New room'"
-            style="display:flex;align-items:center;justify-content:center;"
           >
             <mat-icon style="font-size:16px;width:16px;height:16px">{{ showNewRoom() ? 'close' : 'add' }}</mat-icon>
           </button>
@@ -73,7 +72,7 @@
 
         @if (showNewRoom()) {
           <div class="new-room-form">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic" style="width:100%">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Room name</mat-label>
               <input
                 matInput
@@ -121,7 +120,7 @@
             @if (chat.connectionState() === 'connected' && !showNewRoom()) {
               <div class="empty-rooms">
                 No rooms yet —
-                <button class="accent-link" style="background:none;border:none;cursor:pointer;padding:0;font-size:inherit;" (click)="toggleNewRoom()">create one</button>
+                <button class="accent-link" (click)="toggleNewRoom()">create one</button>
               </div>
             } @else if (chat.connectionState() !== 'connected') {
               <div class="empty-rooms">
@@ -135,7 +134,7 @@
       </nav>
     </mat-sidenav>
 
-    <mat-sidenav-content style="display:flex;flex-direction:column;overflow:hidden;">
+    <mat-sidenav-content class="sidenav-content">
       <router-outlet />
     </mat-sidenav-content>
   </mat-sidenav-container>

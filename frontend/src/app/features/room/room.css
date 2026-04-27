@@ -62,3 +62,31 @@
   font-size: 13px;
   color: var(--text-muted);
 }
+
+.room-not-found-text {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.back-link {
+  color: var(--accent);
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.clear-chat-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.loading-more {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+}
