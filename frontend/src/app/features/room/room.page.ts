@@ -16,7 +16,7 @@ import { RouterLink } from '@angular/router';
 import { ChatSocketService } from '../../core/chat/chat-socket.service';
 import { IdentityService } from '../../core/identity/identity.service';
 import { MessageBubble } from './message-bubble';
-import { MessageComposerComponent } from './message-composer.component';
+import { MessageComposer } from './message-composer';
 import type { Message } from '@repo/shared-types';
 
 export interface GroupedMessage {
@@ -31,7 +31,7 @@ export interface GroupedMessage {
   host: { class: 'flex flex-col flex-1 overflow-hidden min-h-0' },
   imports: [
     MatProgressSpinnerModule, MatIconModule, RouterLink,
-    MessageBubble, MessageComposerComponent,
+    MessageBubble, MessageComposer,
   ],
   styles: [`
     .room-header {

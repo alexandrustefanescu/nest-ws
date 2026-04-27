@@ -1,0 +1,42 @@
+@if (showEmojiPanel()) {
+  <div class="emoji-panel" role="dialog" aria-label="Emoji picker">
+    @for (emoji of commonEmoji; track emoji) {
+      <button class="ep-btn" (click)="insertEmoji(emoji)" [attr.aria-label]="emoji">{{ emoji }}</button>
+    }
+  </div>
+}
+
+<div class="composer-wrap">
+  <button
+    class="emoji-btn"
+    type="button"
+    (click)="toggleEmojiPanel()"
+    [attr.aria-expanded]="showEmojiPanel()"
+    aria-label="Emoji picker"
+  >😊</button>
+
+  <div class="composer-field">
+    <textarea
+      #textarea
+      [ngModel]="text()"
+      (ngModelChange)="text.set($event)"
+      [disabled]="disabled()"
+      cdkTextareaAutosize
+      cdkAutosizeMinRows="1"
+      cdkAutosizeMaxRows="5"
+      (keydown.enter)="onEnter($event)"
+      (input)="onInput()"
+      placeholder="Type a message…"
+      aria-label="Message"
+    ></textarea>
+  </div>
+
+  <button
+    class="send-btn"
+    [disabled]="disabled() || !text().trim()"
+    (click)="send()"
+    aria-label="Send message"
+  >
+    <mat-icon style="font-size:18px;width:18px;height:18px">send</mat-icon>
+  </button>
+</div>
