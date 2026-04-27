@@ -29,10 +29,11 @@ import { LoadMoreDto } from '../messaging/dto/load-more.dto';
 import { ClearChatDto } from '../messaging/dto/clear-chat.dto';
 import { Message } from '../messaging/message.entity';
 import { ConnectionRegistry } from './connection-registry';
+import { env } from '../../config/env';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
+    origin: env.corsOrigin,
     credentials: true,
   },
 })

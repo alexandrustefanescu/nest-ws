@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { databaseConfig } from './database.config';
+import { databaseConfig } from './config/database.config';
 import { HealthModule } from './health/health.module';
 import { DocsModule } from './modules/docs/docs.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
