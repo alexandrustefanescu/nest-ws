@@ -57,10 +57,49 @@ pnpm --filter @repo/frontend start
 
 ### Docker
 
+#### Development with local builds
+
 ```bash
+# Start development containers (builds images locally)
 docker-compose up
+
 # Backend:  http://localhost:3000
 # Frontend: http://localhost:4200
+
+# Rebuild images after code changes
+docker-compose build --no-cache
+docker-compose up
+```
+
+#### Production with pre-built images
+
+Pre-built images are available on Docker Hub at `dockerhub.com/u/alexandrustefanescu`:
+
+```bash
+# Pull and run production images from Docker Hub
+docker-compose -f docker-compose.prod.yml up -d
+
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Stop containers
+docker-compose -f docker-compose.prod.yml down
+```
+
+#### Building and pushing new images
+
+After code changes, rebuild and push images to Docker Hub:
+
+```bash
+# Build both images
+docker-compose build
+
+# Log in to Docker Hub (first time only)
+docker login
+
+# Push to Docker Hub
+docker push alexandrustefanescu/chat-backend:latest
+docker push alexandrustefanescu/chat-frontend:latest
 ```
 
 ### Tests
@@ -158,14 +197,17 @@ socket.on('reaction:updated', ({ messageId, reactions }) => console.log(reaction
 ```
 nest-ws/
 ├── backend/            # NestJS application — see [backend/README.md](backend/README.md)
+│   └── Dockerfile      # Backend Docker image definition
 ├── frontend/           # Angular application — see [frontend/README.md](frontend/README.md)
+│   └── Dockerfile      # Frontend Docker image definition
 ├── packages/
 │   └── shared-types/   # Pure TypeScript interfaces shared across both ends
 │       └── src/
 │           ├── entities.ts         # Room, RoomUser, Message, ReactionMap
 │           ├── events.ts           # SocketEvents const + SocketEventName type
 │           └── contracts/          # per-domain request/response interfaces
-├── docker-compose.yml
+├── docker-compose.yml      # Development compose — builds images locally
+├── docker-compose.prod.yml # Production compose — uses pre-built images from Docker Hub
 └── pnpm-workspace.yaml
 ```
 
