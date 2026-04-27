@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.30.2
 
 # Copy workspace manifests first (for layer caching)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
