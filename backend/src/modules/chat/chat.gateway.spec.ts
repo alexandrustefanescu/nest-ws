@@ -5,7 +5,7 @@ import { MessagesService } from '../messaging/messages.service';
 import { ReactionsService } from '../messaging/reactions.service';
 import { PresenceService } from '../presence/presence.service';
 import { TypingService } from '../presence/typing.service';
-import { WsThrottlerGuard } from '../../guards/ws-throttler.guard';
+import { WsThrottlerGuard } from '../../common/guards/ws-throttler.guard';
 import { WsException } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
