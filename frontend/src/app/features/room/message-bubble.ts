@@ -37,7 +37,6 @@ export class MessageBubble {
   readonly isOwn = computed(() => this.message().userId === this.currentUserId());
 
   private readonly hue = computed(() => userHue(this.message().userId));
-  readonly authorStyle = computed(() => `--user-hue:${this.hue()}`);
   readonly otherBubbleStyle = computed(() => this.isOwn() ? null : `--user-hue:${this.hue()}`);
   readonly time = computed(() =>
     new Date(this.message().createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
