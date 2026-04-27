@@ -3,7 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
-import { IdentityService } from '../identity/identity.service';
+import { Identity } from '../identity/identity';
 import type { Message, ReactionMap, Room, RoomUser } from '@repo/shared-types';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
@@ -32,7 +32,7 @@ function saveRoomsToStorage(rooms: Room[]): void {
 export class ChatSocket {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly http = inject(HttpClient);
-  private readonly identity = inject(IdentityService);
+  private readonly identity = inject(Identity);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   private socket: Socket | null = null;

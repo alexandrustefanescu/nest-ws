@@ -4,7 +4,7 @@ import { isPlatformBrowser } from '@angular/common';
 const STORAGE_KEY = 'userId';
 
 @Injectable({ providedIn: 'root' })
-export class IdentityService {
+export class Identity {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly _userId = signal<string>(this.read());
 

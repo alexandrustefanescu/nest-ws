@@ -14,7 +14,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { ChatSocket } from '../../core/chat/chat-socket';
-import { IdentityService } from '../../core/identity/identity.service';
+import { Identity } from '../../core/identity/identity';
 import { MessageBubble } from './message-bubble';
 import { MessageComposer } from './message-composer';
 import type { Message } from '@repo/shared-types';
@@ -40,7 +40,7 @@ export class Room implements OnInit, OnDestroy, AfterViewChecked {
   readonly id = input.required<string>();
 
   readonly chat = inject(ChatSocket);
-  readonly identity = inject(IdentityService);
+  readonly identity = inject(Identity);
 
   @ViewChild('messageList') private messageList!: ElementRef<HTMLElement>;
   private lastMessageCount = 0;

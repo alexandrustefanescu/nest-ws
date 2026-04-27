@@ -1,9 +1,9 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { IdentityService } from './identity.service';
+import { Identity } from './identity';
 
 export const identityGuard: CanActivateFn = () => {
-  const identity = inject(IdentityService);
+  const identity = inject(Identity);
   const router = inject(Router);
   return identity.userId() ? true : router.parseUrl('/onboarding');
 };

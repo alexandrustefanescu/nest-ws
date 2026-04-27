@@ -12,7 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ChatSocket } from '../../core/chat/chat-socket';
-import { IdentityService } from '../../core/identity/identity.service';
+import { Identity } from '../../core/identity/identity';
 import { ThemeService, ThemeMode } from '../../core/theme/theme.service';
 import { ConnectionBanner } from './connection-banner';
 
@@ -30,7 +30,7 @@ import { ConnectionBanner } from './connection-banner';
 })
 export class Shell {
   readonly chat = inject(ChatSocket);
-  readonly identity = inject(IdentityService);
+  readonly identity = inject(Identity);
   readonly theme = inject(ThemeService);
 
   protected readonly showNewRoom = signal(false);

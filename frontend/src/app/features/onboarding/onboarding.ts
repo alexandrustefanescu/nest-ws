@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { IdentityService } from '../../core/identity/identity.service';
+import { Identity } from '../../core/identity/identity';
 
 @Component({
   selector: 'app-onboarding',
@@ -14,7 +14,7 @@ import { IdentityService } from '../../core/identity/identity.service';
   templateUrl: './onboarding.html',
 })
 export class Onboarding implements OnInit {
-  private readonly identity = inject(IdentityService);
+  private readonly identity = inject(Identity);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
 
