@@ -10,24 +10,24 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { OnModuleInit, UseFilters, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
-import { RoomService } from '../services/room.service';
-import { MessagesService } from '../modules/messaging/messages.service';
-import { ReactionsService } from '../modules/messaging/reactions.service';
-import { PresenceService } from '../modules/presence/presence.service';
-import { TypingService } from '../modules/presence/typing.service';
-import { WsThrottlerGuard, WsThrottle } from '../guards/ws-throttler.guard';
-import { WsExceptionFilter } from '../filters/ws-exception.filter';
-import { LoggingInterceptor } from '../interceptors/logging.interceptor';
-import { JoinRoomDto, LeaveRoomDto } from '../modules/presence/dto/join-room.dto';
-import { SendMessageDto } from '../modules/messaging/dto/send-message.dto';
-import { TypingDto } from '../modules/presence/dto/typing.dto';
-import { CreateRoomDto } from '../modules/rooms/dto/create-room.dto';
-import { DeleteRoomDto } from '../modules/rooms/dto/delete-room.dto';
-import { ToggleReactionDto } from '../modules/messaging/dto/toggle-reaction.dto';
-import { DeleteMessageDto } from '../modules/messaging/dto/delete-message.dto';
-import { LoadMoreDto } from '../modules/messaging/dto/load-more.dto';
-import { ClearChatDto } from '../modules/messaging/dto/clear-chat.dto';
-import { Message } from '../modules/messaging/message.entity';
+import { RoomsService } from '../rooms/rooms.service';
+import { MessagesService } from '../messaging/messages.service';
+import { ReactionsService } from '../messaging/reactions.service';
+import { PresenceService } from '../presence/presence.service';
+import { TypingService } from '../presence/typing.service';
+import { WsThrottlerGuard, WsThrottle } from '../../guards/ws-throttler.guard';
+import { WsExceptionFilter } from '../../filters/ws-exception.filter';
+import { LoggingInterceptor } from '../../interceptors/logging.interceptor';
+import { JoinRoomDto, LeaveRoomDto } from '../presence/dto/join-room.dto';
+import { SendMessageDto } from '../messaging/dto/send-message.dto';
+import { TypingDto } from '../presence/dto/typing.dto';
+import { CreateRoomDto } from '../rooms/dto/create-room.dto';
+import { DeleteRoomDto } from '../rooms/dto/delete-room.dto';
+import { ToggleReactionDto } from '../messaging/dto/toggle-reaction.dto';
+import { DeleteMessageDto } from '../messaging/dto/delete-message.dto';
+import { LoadMoreDto } from '../messaging/dto/load-more.dto';
+import { ClearChatDto } from '../messaging/dto/clear-chat.dto';
+import { Message } from '../messaging/message.entity';
 
 type ClientRooms = Map<number, string>;
 type RoomUserSockets = Map<string, Set<string>>;
@@ -49,7 +49,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   private readonly roomUserSockets = new Map<number, RoomUserSockets>();
 
   constructor(
-    private readonly roomService: RoomService,
+    private readonly roomsService: RoomsService,
     private readonly messagesService: MessagesService,
     private readonly reactionsService: ReactionsService,
     private readonly presenceService: PresenceService,
@@ -63,7 +63,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
 
   async handleConnection(@ConnectedSocket() client: Socket) {
     console.log(`Client connected: ${client.id}`);
-    const rooms = await this.roomService.getAllRooms();
+    const rooms = await this.roomsService.getAllRooms();
     client.emit('rooms:list', rooms);
   }
 
@@ -92,7 +92,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   ) {
     const { roomId, userId } = data;
 
-    const room = await this.roomService.getRoomById(roomId);
+    const room = await this.roomsService.getRoomById(roomId);
     if (!room) {
       throw new WsException('Room not found');
     }
@@ -131,7 +131,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   ) {
     const { roomId, userId, text } = data;
 
-    const room = await this.roomService.getRoomById(roomId);
+    const room = await this.roomsService.getRoomById(roomId);
     if (!room) {
       throw new WsException('Room not found');
     }
@@ -188,8 +188,8 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @ConnectedSocket() _client: Socket,
     @MessageBody() data: CreateRoomDto,
   ) {
-    const room = await this.roomService.createRoom(data.name);
-    const allRooms = await this.roomService.getAllRooms();
+    const room = await this.roomsService.createRoom(data.name);
+    const allRooms = await this.roomsService.getAllRooms();
     this.server.emit('rooms:list', allRooms);
     return room;
   }
@@ -202,15 +202,15 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: DeleteRoomDto,
   ) {
     const { roomId } = data;
-    const room = await this.roomService.getRoomById(roomId);
+    const room = await this.roomsService.getRoomById(roomId);
     if (!room) {
       throw new WsException('Room not found');
     }
     await this.messagesService.clearRoomMessages(roomId);
     await this.presenceService.clearRoomPresence(roomId);
     await this.typingService.clearRoomTyping(roomId);
-    await this.roomService.deleteRoom(roomId);
-    const allRooms = await this.roomService.getAllRooms();
+    await this.roomsService.deleteRoom(roomId);
+    const allRooms = await this.roomsService.getAllRooms();
     this.server.emit('rooms:list', allRooms);
   }
 
