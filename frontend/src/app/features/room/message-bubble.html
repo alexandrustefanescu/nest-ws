@@ -1,5 +1,9 @@
-@if (!isOwn() && firstInGroup()) {
-  <p class="author-label" [style]="authorStyle()">{{ message().userId }}</p>
+@if (firstInGroup()) {
+  @if (isOwn()) {
+    <div class="author-label">You</div>
+  } @else {
+    <div class="author-label" [style]="authorStyle()">{{ message().userName }}</div>
+  }
 }
 
 <div class="bubble-row" [class]="isOwn() ? 'own' : 'other'">
