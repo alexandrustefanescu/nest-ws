@@ -4,7 +4,7 @@ import { HealthResponseDto } from './dto/health.dto';
 
 @ApiTags('health')
 @Controller()
-export class AppController {
+export class HealthController {
   @Get('/health')
   @ApiOperation({ summary: 'Check service health' })
   @ApiResponse({ status: 200, type: HealthResponseDto, description: 'Service is healthy' })

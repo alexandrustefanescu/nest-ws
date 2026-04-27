@@ -3,8 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { databaseConfig } from './database.config';
-import { AppController } from './app.controller';
 import { WsDocsController } from './controllers/ws-docs.controller';
+import { HealthModule } from './health/health.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { PresenceModule } from './modules/presence/presence.module';
@@ -21,8 +21,9 @@ import { ChatModule } from './modules/chat/chat.module';
     MessagingModule,
     PresenceModule,
     ChatModule,
+    HealthModule,
   ],
-  controllers: [AppController, WsDocsController],
+  controllers: [WsDocsController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
