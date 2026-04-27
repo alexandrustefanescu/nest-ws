@@ -1,0 +1,66 @@
+@if (!isOwn() && firstInGroup()) {
+  <p class="author-label" [style]="authorStyle()">{{ message().userId }}</p>
+}
+
+<div class="bubble-row" [class]="isOwn() ? 'own' : 'other'">
+  <article
+    class="bubble"
+    [class]="isOwn() ? 'own' : 'other'"
+    [style]="otherBubbleStyle()"
+    [attr.aria-label]="message().userId + ' at ' + time() + ': ' + message().text"
+  >
+    <p class="bubble-text">{{ message().text }}</p>
+    <p class="timestamp" [class.hidden]="!lastInGroup()">{{ time() }}</p>
+  </article>
+
+  <div class="msg-actions">
+    @if (isOwn()) {
+      <button
+        class="action-btn danger"
+        (click)="deleteMsg()"
+        aria-label="Delete message"
+      ><mat-icon>delete</mat-icon></button>
+    } @else {
+      <button
+        class="action-btn"
+        (click)="togglePicker()"
+        aria-label="Add reaction"
+        [attr.aria-expanded]="showPicker()"
+      ><mat-icon>add_reaction</mat-icon></button>
+
+      @if (showPicker()) {
+        <div
+          class="reaction-picker"
+          role="dialog"
+          aria-label="Pick a reaction"
+        >
+          @for (emoji of reactionEmojis; track emoji) {
+            <button
+              class="picker-emoji-btn"
+              (click)="react(emoji)"
+              [attr.aria-label]="emoji"
+            >{{ emoji }}</button>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>
+
+@if (hasReactions()) {
+  <div class="reactions-row" [class.own]="isOwn()">
+    @for (entry of reactionEntries(); track entry.emoji) {
+      <button
+        class="reaction-pill"
+        [class.mine]="entry.isMine"
+        [class.others]="!entry.isMine"
+        (click)="react(entry.emoji)"
+        [attr.aria-label]="entry.emoji + ' ' + entry.count + (entry.count === 1 ? ' reaction' : ' reactions') + (entry.isMine ? ', active' : '')"
+        [attr.aria-pressed]="entry.isMine"
+      >
+        <span>{{ entry.emoji }}</span>
+        <span>{{ entry.count }}</span>
+      </button>
+    }
+  </div>
+}
