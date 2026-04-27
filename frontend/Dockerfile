@@ -22,4 +22,4 @@ RUN pnpm --filter @repo/frontend build
 
 EXPOSE 4200
 
-CMD ["pnpm", "--filter", "@repo/frontend", "start"]
+CMD ["node", "frontend/dist/frontend/server/server.mjs"]

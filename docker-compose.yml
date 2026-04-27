@@ -6,8 +6,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       DATABASE_PATH: /app/data/chat.db
+      PORT: 3000
     volumes:
       - chat-data:/app/data
     healthcheck:
@@ -16,6 +17,18 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  chat-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "4200:4200"
+    environment:
+      NODE_ENV: development
+      PORT: 4200
+    depends_on:
+      - chat-backend
 
 volumes:
   chat-data:
