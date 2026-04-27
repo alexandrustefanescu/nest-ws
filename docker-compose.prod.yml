@@ -9,7 +9,7 @@ services:
     volumes:
       - chat-data:/app/data
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -19,7 +19,7 @@ services:
       - coolify
     labels:
       - traefik.enable=true
-      - traefik.http.routers.chat-backend.rule=Host(`api.chat.coolify.webwedo.eu`)
+      - traefik.http.routers.chat-backend.rule=Host(`api-chat.coolify.webwedo.eu`)
       - traefik.http.routers.chat-backend.entrypoints=https
       - traefik.http.routers.chat-backend.tls=true
       - traefik.http.routers.chat-backend.tls.certresolver=letsencrypt
@@ -31,7 +31,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4200
-      API_URL: https://api.chat.coolify.webwedo.eu
+      BACKEND_URL: https://api-chat.coolify.webwedo.eu
       ANGULAR_APP_BASE_URL: https://chat.coolify.webwedo.eu
     depends_on:
       - chat-backend

@@ -12,11 +12,15 @@ import {
 } from '@angular/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDialog } from '@angular/material/dialog';
 import { RouterLink } from '@angular/router';
 import { ChatSocket } from '../../core/chat/chat-socket';
 import { Identity } from '../../core/identity/identity';
 import { MessageBubble } from './message-bubble';
 import { MessageComposer } from './message-composer';
+import { ClearChatDialog } from './clear-chat-dialog';
 import type { Message } from '@repo/shared-types';
 
 export interface GroupedMessage {
@@ -30,7 +34,7 @@ export interface GroupedMessage {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'flex flex-col flex-1 overflow-hidden min-h-0' },
   imports: [
-    MatProgressSpinnerModule, MatIconModule, RouterLink,
+    MatProgressSpinnerModule, MatIconModule, MatButtonModule, MatMenuModule, RouterLink,
     MessageBubble, MessageComposer,
   ],
   templateUrl: './room.html',
@@ -41,6 +45,7 @@ export class Room implements OnInit, OnDestroy, AfterViewChecked {
 
   readonly chat = inject(ChatSocket);
   readonly identity = inject(Identity);
+  private readonly dialog = inject(MatDialog);
 
   @ViewChild('messageList') private messageList!: ElementRef<HTMLElement>;
   private lastMessageCount = 0;
@@ -105,10 +110,26 @@ export class Room implements OnInit, OnDestroy, AfterViewChecked {
     }
   }
 
-  onClearChat(): void {
-    if (confirm('Clear all messages for everyone? This cannot be undone.')) {
-      this.chat.clearChat(this.roomId());
+  private readonly avatarPalette = [
+    '#5c7cfa', '#74c0fc', '#63e6be', '#a9e34b',
+    '#ffd43b', '#ffa94d', '#ff8787', '#da77f2',
+  ];
+
+  avatarColor(userId: string): string {
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = userId.charCodeAt(i) + ((hash << 5) - hash);
     }
+    return this.avatarPalette[Math.abs(hash) % this.avatarPalette.length];
+  }
+
+  onClearChat(): void {
+    this.dialog
+      .open(ClearChatDialog, { width: '360px', autoFocus: 'first-tabbable' })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) this.chat.clearChat(this.roomId());
+      });
   }
 
   private scrollToBottom(): void {

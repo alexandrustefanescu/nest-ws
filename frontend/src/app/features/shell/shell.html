@@ -28,17 +28,14 @@
     <mat-menu #themeMenu="matMenu">
       <button mat-menu-item (click)="setTheme('light')">
         <mat-icon>light_mode</mat-icon>
-        <span>Light</span>
         @if (theme.mode() === 'light') { <mat-icon class="ml-auto">check</mat-icon> }
       </button>
       <button mat-menu-item (click)="setTheme('dark')">
         <mat-icon>dark_mode</mat-icon>
-        <span>Dark</span>
         @if (theme.mode() === 'dark') { <mat-icon class="ml-auto">check</mat-icon> }
       </button>
       <button mat-menu-item (click)="setTheme('system')">
         <mat-icon>desktop_windows</mat-icon>
-        <span>System</span>
         @if (theme.mode() === 'system') { <mat-icon class="ml-auto">check</mat-icon> }
       </button>
     </mat-menu>

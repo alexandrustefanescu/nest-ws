@@ -12,18 +12,41 @@
   <header class="room-header">
     <mat-icon style="color:var(--text-faint);font-size:18px;width:18px;height:18px">chat_bubble_outline</mat-icon>
     <span class="room-name">{{ room()!.name }}</span>
-    <div class="online-indicator">
+    <button
+      class="online-indicator"
+      [matMenuTriggerFor]="usersMenu"
+      aria-label="View room members"
+    >
       <span class="presence-dot" aria-hidden="true"></span>
       {{ users().length }} online
-    </div>
-    <button
-      (click)="onClearChat()"
-      class="clear-chat-btn"
-      aria-label="Clear chat"
-      title="Clear chat"
-    >
-      <mat-icon style="font-size:18px;width:18px;height:18px">delete_sweep</mat-icon>
     </button>
+    <mat-menu #usersMenu="matMenu" xPosition="before">
+      @for (user of users(); track user.userId) {
+        <button mat-menu-item class="user-list-item">
+          <span class="user-avatar" [style.background]="avatarColor(user.userId)">
+            {{ user.userId[0].toUpperCase() }}
+          </span>
+          <span class="user-name-text">{{ user.userId }}</span>
+          @if (user.userId === identity.userId()) {
+            <span class="you-badge">you</span>
+          }
+        </button>
+      }
+    </mat-menu>
+    <button
+      mat-icon-button
+      [matMenuTriggerFor]="roomMenu"
+      class="header-action"
+      aria-label="Room options"
+    >
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #roomMenu="matMenu" xPosition="before">
+      <button mat-menu-item class="menu-item-danger" (click)="onClearChat()">
+        <mat-icon>delete</mat-icon>
+        <span>Clear chat</span>
+      </button>
+    </mat-menu>
   </header>
 
   <div

@@ -23,6 +23,56 @@
   gap: 5px;
   font-size: 12px;
   color: var(--text-muted);
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+
+.online-indicator:hover {
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--text-muted) 10%, transparent);
+}
+
+.user-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.user-name-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.you-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 6px;
+  border-radius: 99px;
+  flex-shrink: 0;
 }
 
 .presence-dot {
@@ -75,14 +125,13 @@
   font-weight: 500;
 }
 
-.clear-chat-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-faint);
-  display: flex;
-  align-items: center;
-  padding: 4px;
+.header-action {
+  color: var(--text-muted);
+}
+
+.menu-item-danger,
+.menu-item-danger mat-icon {
+  color: var(--danger);
 }
 
 .loading-more {
