@@ -1,4 +1,5 @@
 # compiled output
+.turbo/
 /dist
 /node_modules
 /build
@@ -75,3 +76,5 @@ chat.db
 
 # Docs / planning artifacts
 docs/
+!backend/src/**/docs/
+!frontend/src/**/docs/
