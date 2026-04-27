@@ -73,7 +73,10 @@ docker-compose up
 
 #### Production with pre-built images
 
-Pre-built images are available on Docker Hub at `dockerhub.com/u/alexandrustefanescu`:
+Pre-built multi-architecture images (linux/amd64, linux/arm64) are available on Docker Hub:
+
+- **Backend:** [`alexandrustefanescu/chat-backend:latest`](https://hub.docker.com/r/alexandrustefanescu/chat-backend)
+- **Frontend:** [`alexandrustefanescu/chat-frontend:latest`](https://hub.docker.com/r/alexandrustefanescu/chat-frontend)
 
 ```bash
 # Pull and run production images from Docker Hub
@@ -88,18 +91,17 @@ docker-compose -f docker-compose.prod.yml down
 
 #### Building and pushing new images
 
-After code changes, rebuild and push images to Docker Hub:
+After code changes, rebuild and push multi-architecture images to Docker Hub:
 
 ```bash
-# Build both images
-docker-compose build
-
 # Log in to Docker Hub (first time only)
 docker login
 
-# Push to Docker Hub
-docker push alexandrustefanescu/chat-backend:latest
-docker push alexandrustefanescu/chat-frontend:latest
+# Build and push backend image for linux/amd64 and linux/arm64
+docker buildx build -t alexandrustefanescu/chat-backend:latest --platform linux/amd64,linux/arm64 -f backend/Dockerfile --push .
+
+# Build and push frontend image for linux/amd64 and linux/arm64
+docker buildx build -t alexandrustefanescu/chat-frontend:latest --platform linux/amd64,linux/arm64 -f frontend/Dockerfile --push .
 ```
 
 ### Tests
