@@ -9,16 +9,22 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { OnModuleInit, UseFilters, UseGuards, UseInterceptors } from '@nestjs/common';
+import { OnModuleInit, UseFilters, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
 import { WsThrottlerGuard, WsThrottle } from '../guards/ws-throttler.guard';
 import { WsExceptionFilter } from '../filters/ws-exception.filter';
 import { LoggingInterceptor } from '../interceptors/logging.interceptor';
-import { JoinRoomPipe, SendMessagePipe, TypingPipe } from '../pipes';
+import { JoinRoomDto, LeaveRoomDto } from '../dto/join-room.dto';
+import { SendMessageDto } from '../dto/send-message.dto';
+import { TypingDto } from '../dto/typing.dto';
+import { CreateRoomDto } from '../dto/create-room.dto';
+import { DeleteRoomDto } from '../dto/delete-room.dto';
+import { ToggleReactionDto } from '../dto/toggle-reaction.dto';
+import { DeleteMessageDto } from '../dto/delete-message.dto';
+import { LoadMoreDto } from '../dto/load-more.dto';
+import { ClearChatDto } from '../dto/clear-chat.dto';
 import { Message } from '../entities/message.entity';
-
-const ALLOWED_REACTIONS = new Set(['👍', '❤️', '😂', '😮', '😢', '🔥']);
 
 type ClientRooms = Map<number, string>;
 type RoomUserSockets = Map<string, Set<string>>;
@@ -29,6 +35,7 @@ type RoomUserSockets = Map<string, Set<string>>;
     credentials: true,
   },
 })
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
 @UseFilters(new WsExceptionFilter())
 @UseInterceptors(new LoggingInterceptor())
 export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -75,7 +82,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('room:join')
   async handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody(new JoinRoomPipe()) data: { roomId: number; userId: string },
+    @MessageBody() data: JoinRoomDto,
   ) {
     const { roomId, userId } = data;
 
@@ -114,7 +121,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('message:send')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody(new SendMessagePipe()) data: { roomId: number; userId: string; text: string },
+    @MessageBody() data: SendMessageDto,
   ) {
     const { roomId, userId, text } = data;
 
@@ -139,7 +146,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('typing:start')
   async handleTypingStart(
     @ConnectedSocket() client: Socket,
-    @MessageBody(new TypingPipe()) data: { roomId: number; userId: string },
+    @MessageBody() data: TypingDto,
   ) {
     const { roomId, userId } = data;
 
@@ -156,7 +163,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('typing:stop')
   async handleTypingStop(
     @ConnectedSocket() client: Socket,
-    @MessageBody(new TypingPipe()) data: { roomId: number; userId: string },
+    @MessageBody() data: TypingDto,
   ) {
     const { roomId, userId } = data;
 
@@ -173,16 +180,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('room:create')
   async handleCreateRoom(
     @ConnectedSocket() _client: Socket,
-    @MessageBody() data: { name: string },
+    @MessageBody() data: CreateRoomDto,
   ) {
-    const name = (data?.name ?? '').trim();
-    if (!name) {
-      throw new WsException('Room name is required');
-    }
-    if (name.length > 100) {
-      throw new WsException('Room name must be 100 characters or fewer');
-    }
-    const room = await this.roomService.createRoom(name);
+    const room = await this.roomService.createRoom(data.name);
     const allRooms = await this.roomService.getAllRooms();
     this.server.emit('rooms:list', allRooms);
     return room;
@@ -193,14 +193,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('room:delete')
   async handleDeleteRoom(
     @ConnectedSocket() _client: Socket,
-    @MessageBody() data: { roomId: number },
+    @MessageBody() data: DeleteRoomDto,
   ) {
-    const roomId = typeof data?.roomId === 'number' && Number.isInteger(data.roomId) && data.roomId > 0
-      ? data.roomId
-      : null;
-    if (roomId === null) {
-      throw new WsException('roomId is required');
-    }
+    const { roomId } = data;
     const room = await this.roomService.getRoomById(roomId);
     if (!room) {
       throw new WsException('Room not found');
@@ -216,19 +211,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('reaction:toggle')
   async handleToggleReaction(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: number; messageId: number; userId: string; emoji: string },
+    @MessageBody() data: ToggleReactionDto,
   ) {
-    const { roomId, messageId, userId, emoji } = data ?? {};
-    if (
-      typeof roomId !== 'number' || !Number.isInteger(roomId) || roomId <= 0 ||
-      typeof messageId !== 'number' || !Number.isInteger(messageId) || messageId <= 0 ||
-      typeof userId !== 'string' || userId.trim().length === 0
-    ) {
-      throw new WsException('Invalid payload');
-    }
-    if (!ALLOWED_REACTIONS.has(emoji)) {
-      throw new WsException('Invalid emoji');
-    }
+    const { roomId, messageId, userId, emoji } = data;
     const reactions = await this.chatService.toggleReaction(messageId, userId, emoji);
     this.server.to(`room-${roomId}`).emit('reaction:updated', { messageId, reactions });
   }
@@ -238,7 +223,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('room:leave')
   async handleLeaveRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody(new JoinRoomPipe()) data: { roomId: number; userId: string },
+    @MessageBody() data: LeaveRoomDto,
   ) {
     const { roomId, userId } = data;
 
@@ -253,15 +238,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('messages:load-more')
   async handleLoadMore(
-    @MessageBody() data: { roomId: number; before: number },
+    @MessageBody() data: LoadMoreDto,
   ): Promise<{ messages: Message[]; hasMore: boolean }> {
-    const { roomId, before } = data ?? {};
-    if (
-      typeof roomId !== 'number' || !Number.isInteger(roomId) || roomId <= 0 ||
-      typeof before !== 'number' || !Number.isInteger(before) || before <= 0
-    ) {
-      return { messages: [], hasMore: false };
-    }
+    const { roomId, before } = data;
     const messages = await this.chatService.getMessageHistory(roomId, before);
     return { messages, hasMore: messages.length === 50 };
   }
@@ -271,16 +250,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('message:delete')
   async handleDeleteMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: number; messageId: number; userId: string },
+    @MessageBody() data: DeleteMessageDto,
   ): Promise<void> {
-    const { roomId, messageId, userId } = data ?? {};
-    if (
-      typeof roomId !== 'number' || !Number.isInteger(roomId) || roomId <= 0 ||
-      typeof messageId !== 'number' || !Number.isInteger(messageId) || messageId <= 0 ||
-      typeof userId !== 'string' || userId.trim().length === 0
-    ) {
-      throw new WsException('Invalid payload');
-    }
+    const { roomId, messageId, userId } = data;
     await this.chatService.deleteMessage(messageId, userId);
     this.server.to(`room-${roomId}`).emit('message:deleted', { roomId, messageId });
   }
@@ -290,12 +262,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('chat:clear')
   async handleClearChat(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { roomId: number; userId: string },
+    @MessageBody() data: ClearChatDto,
   ): Promise<void> {
-    const { roomId } = data ?? {};
-    if (typeof roomId !== 'number' || !Number.isInteger(roomId) || roomId <= 0) {
-      throw new WsException('roomId must be a positive integer');
-    }
+    const { roomId } = data;
     await this.chatService.clearRoomMessages(roomId);
     this.server.to(`room-${roomId}`).emit('chat:cleared', { roomId });
   }

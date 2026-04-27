@@ -44,8 +44,11 @@ describe('ChatGateway', () => {
     getRoomById: jest.Mock;
     deleteRoom: jest.Mock;
   };
+  let mockWsThrottlerGuard: { canActivate: jest.Mock; evict: jest.Mock };
 
   beforeEach(async () => {
+    mockWsThrottlerGuard = { canActivate: jest.fn().mockReturnValue(true), evict: jest.fn() };
+
     mockChatService = {
       saveMessage: jest.fn(),
       getUsersInRoom: jest.fn().mockResolvedValue([]),
@@ -75,7 +78,7 @@ describe('ChatGateway', () => {
         ChatGateway,
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
-        { provide: WsThrottlerGuard, useValue: { canActivate: jest.fn().mockReturnValue(true), evict: jest.fn() } },
+        { provide: WsThrottlerGuard, useValue: mockWsThrottlerGuard },
       ],
     }).compile();
 
@@ -243,17 +246,6 @@ describe('ChatGateway', () => {
       messageId: 42,
       reactions: { '👍': ['u1'] },
     });
-  });
-
-  it('should throw WsException for invalid emoji', async () => {
-    await expect(
-      gateway.handleToggleReaction(mockSocket, {
-        roomId: 1,
-        messageId: 1,
-        userId: 'u1',
-        emoji: '💀',
-      }),
-    ).rejects.toThrow(WsException);
   });
 
   it('emits messages:history to joining socket on room:join', async () => {

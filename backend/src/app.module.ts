@@ -14,7 +14,6 @@ import { WsDocsController } from './controllers/ws-docs.controller';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { WsThrottlerGuard } from './guards/ws-throttler.guard';
-
 import { RoomsController } from './controllers/rooms.controller';
 
 @Module({

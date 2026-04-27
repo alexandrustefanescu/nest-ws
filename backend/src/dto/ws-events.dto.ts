@@ -1,34 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-// ─── Incoming event payloads (client → server) ───────────────────────────────
-
-export class JoinRoomDto {
-  @ApiProperty({ example: 1, description: 'ID of the room to join' })
-  roomId: number;
-
-  @ApiProperty({ example: 'user-123', description: 'Unique identifier for the user' })
-  userId: string;
-}
-
-export class SendMessageDto {
-  @ApiProperty({ example: 1 })
-  roomId: number;
-
-  @ApiProperty({ example: 'user-123' })
-  userId: string;
-
-  @ApiProperty({ example: 'Hello, world!' })
-  text: string;
-}
-
-export class TypingDto {
-  @ApiProperty({ example: 1 })
-  roomId: number;
-
-  @ApiProperty({ example: 'user-123' })
-  userId: string;
-}
-
 // ─── Outgoing event payloads (server → client) ───────────────────────────────
 
 export class RoomDto {
@@ -131,31 +102,4 @@ export class MessageDeletedEventDto {
 export class ChatClearedEventDto {
   @ApiProperty({ example: 1, description: 'Emitted as: chat:cleared — broadcast to the room' })
   roomId: number;
-}
-
-export class LoadMoreDto {
-  @ApiProperty({ example: 1, description: 'Client → server: messages:load-more' })
-  roomId: number;
-
-  @ApiProperty({ example: 100, description: 'Fetch messages with id < before' })
-  before: number;
-}
-
-export class DeleteMessageDto {
-  @ApiProperty({ example: 1, description: 'Client → server: message:delete' })
-  roomId: number;
-
-  @ApiProperty({ example: 42 })
-  messageId: number;
-
-  @ApiProperty({ example: 'user-123' })
-  userId: string;
-}
-
-export class ClearChatDto {
-  @ApiProperty({ example: 1, description: 'Client → server: chat:clear' })
-  roomId: number;
-
-  @ApiProperty({ example: 'user-123' })
-  userId: string;
 }
