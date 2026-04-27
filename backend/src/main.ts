@@ -7,6 +7,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import ScalarApiReference from '@scalar/fastify-api-reference';
 import helmet from '@fastify/helmet';
 import fastifyCsrf from '@fastify/csrf-protection';
+import { RoomsService } from './modules/rooms/rooms.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -59,7 +60,7 @@ async function bootstrap() {
     },
   });
 
-  const roomService = app.get('RoomService');
+  const roomService = app.get(RoomsService);
   try {
     const existingRooms = await roomService.getAllRooms();
     if (existingRooms.length === 0) {
