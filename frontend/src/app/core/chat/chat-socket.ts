@@ -29,7 +29,7 @@ function saveRoomsToStorage(rooms: Room[]): void {
 }
 
 @Injectable({ providedIn: 'root' })
-export class ChatSocketService {
+export class ChatSocket {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly http = inject(HttpClient);
   private readonly identity = inject(IdentityService);

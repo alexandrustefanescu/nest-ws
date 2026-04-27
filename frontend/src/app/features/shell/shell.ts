@@ -11,7 +11,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ChatSocketService } from '../../core/chat/chat-socket.service';
+import { ChatSocket } from '../../core/chat/chat-socket';
 import { IdentityService } from '../../core/identity/identity.service';
 import { ThemeService, ThemeMode } from '../../core/theme/theme.service';
 import { ConnectionBanner } from './connection-banner';
@@ -29,7 +29,7 @@ import { ConnectionBanner } from './connection-banner';
   styleUrl: './shell.css',
 })
 export class Shell {
-  readonly chat = inject(ChatSocketService);
+  readonly chat = inject(ChatSocket);
   readonly identity = inject(IdentityService);
   readonly theme = inject(ThemeService);
 

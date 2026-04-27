@@ -71,7 +71,7 @@
 :where(.dark, .dark *) .action-btn.danger:hover { background: oklch(22% 0.06 25); color: oklch(70% 0.18 25); }
 
 .reaction-picker {
-  position: absolute; top: calc(100% + 4px); z-index: 50;
+  position: absolute; top: calc(100% + 4px); z-index: 100;
   display: flex; gap: 4px;
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);

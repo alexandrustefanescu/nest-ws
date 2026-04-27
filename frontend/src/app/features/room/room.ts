@@ -13,7 +13,7 @@ import {
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { ChatSocketService } from '../../core/chat/chat-socket.service';
+import { ChatSocket } from '../../core/chat/chat-socket';
 import { IdentityService } from '../../core/identity/identity.service';
 import { MessageBubble } from './message-bubble';
 import { MessageComposer } from './message-composer';
@@ -39,7 +39,7 @@ export interface GroupedMessage {
 export class Room implements OnInit, OnDestroy, AfterViewChecked {
   readonly id = input.required<string>();
 
-  readonly chat = inject(ChatSocketService);
+  readonly chat = inject(ChatSocket);
   readonly identity = inject(IdentityService);
 
   @ViewChild('messageList') private messageList!: ElementRef<HTMLElement>;

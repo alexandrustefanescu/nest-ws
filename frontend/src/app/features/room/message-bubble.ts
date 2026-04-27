@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import type { Message, ReactionMap } from '@repo/shared-types';
-import { ChatSocketService } from '../../core/chat/chat-socket.service';
+import { ChatSocket } from '../../core/chat/chat-socket';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
@@ -29,7 +29,7 @@ export class MessageBubble {
   readonly reactions = input<ReactionMap>({});
   readonly roomId = input.required<number>();
 
-  private readonly chat = inject(ChatSocketService);
+  private readonly chat = inject(ChatSocket);
 
   readonly reactionEmojis = REACTION_EMOJIS;
   readonly showPicker = signal(false);
