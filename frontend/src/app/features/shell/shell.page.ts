@@ -14,7 +14,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ChatSocketService } from '../../core/chat/chat-socket.service';
 import { IdentityService } from '../../core/identity/identity.service';
 import { ThemeService, ThemeMode } from '../../core/theme/theme.service';
-import { ConnectionBannerComponent } from './connection-banner.component';
+import { ConnectionBanner } from './connection-banner';
 
 @Component({
   selector: 'app-shell',
@@ -23,7 +23,7 @@ import { ConnectionBannerComponent } from './connection-banner.component';
     RouterOutlet, RouterLink, RouterLinkActive, FormsModule,
     MatSidenavModule, MatIconModule, MatButtonModule,
     MatFormFieldModule, MatInputModule, MatMenuModule, MatTooltipModule,
-    ConnectionBannerComponent,
+    ConnectionBanner,
   ],
   styles: [`
     :host {

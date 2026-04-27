@@ -1,0 +1,17 @@
+@if (state() !== 'connected') {
+  <div class="toast-wrap" role="status" aria-live="polite">
+    <div class="toast-pill">
+      <span
+        class="status-dot"
+        [class.connecting]="state() === 'connecting'"
+        [class.disconnected]="state() === 'disconnected'"
+        aria-hidden="true"
+      ></span>
+      @if (state() === 'connecting') {
+        Connecting to server…
+      } @else {
+        Disconnected — trying to reconnect
+      }
+    </div>
+  </div>
+}
