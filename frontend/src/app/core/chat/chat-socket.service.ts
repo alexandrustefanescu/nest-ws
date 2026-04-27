@@ -2,9 +2,11 @@ import { Injectable, PLATFORM_ID, inject, signal, computed } from '@angular/core
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
-import { environment } from '../../environments/environment';
-import { IdentityService } from './identity.service';
-import type { ConnectionState, Message, ReactionMap, Room, RoomUser } from './chat.models';
+import { environment } from '../../../environments/environment';
+import { IdentityService } from '../identity/identity.service';
+import type { Message, ReactionMap, Room, RoomUser } from '@repo/shared-types';
+
+export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
 
 const TYPING_DEBOUNCE_MS = 3000;
 const ROOMS_STORAGE_KEY = 'chat_rooms';

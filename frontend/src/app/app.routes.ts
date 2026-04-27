@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { identityGuard } from './chat/identity.guard';
+import { identityGuard } from './core/identity/identity.guard';
 
 export const routes: Routes = [
   {

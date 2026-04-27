@@ -11,9 +11,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ChatSocketService } from '../../chat/chat-socket.service';
-import { IdentityService } from '../../chat/identity.service';
-import { ThemeService, ThemeMode } from '../../theme/theme.service';
+import { ChatSocketService } from '../../core/chat/chat-socket.service';
+import { IdentityService } from '../../core/identity/identity.service';
+import { ThemeService, ThemeMode } from '../../core/theme/theme.service';
 import { ConnectionBannerComponent } from './connection-banner.component';
 
 @Component({

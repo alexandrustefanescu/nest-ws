@@ -13,11 +13,11 @@ import {
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { ChatSocketService } from '../../chat/chat-socket.service';
-import { IdentityService } from '../../chat/identity.service';
+import { ChatSocketService } from '../../core/chat/chat-socket.service';
+import { IdentityService } from '../../core/identity/identity.service';
 import { MessageBubbleComponent } from './message-bubble.component';
 import { MessageComposerComponent } from './message-composer.component';
-import type { Message } from '../../chat/chat.models';
+import type { Message } from '@repo/shared-types';
 
 export interface GroupedMessage {
   msg: Message;

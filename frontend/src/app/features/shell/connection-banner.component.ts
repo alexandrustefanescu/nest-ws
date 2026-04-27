@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import type { ConnectionState } from '../../chat/chat.models';
+import type { ConnectionState } from '../../core/chat/chat-socket.service';
 
 @Component({
   selector: 'app-connection-banner',
