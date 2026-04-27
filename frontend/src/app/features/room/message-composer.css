@@ -58,3 +58,9 @@ textarea:disabled { opacity: 0.5; cursor: not-allowed; }
   transition: background var(--dur-fast) var(--ease-out);
 }
 .ep-btn:hover { background: var(--surface-2); }
+
+.icon-sm {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}

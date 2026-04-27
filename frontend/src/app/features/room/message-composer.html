@@ -13,7 +13,7 @@
     (click)="toggleEmojiPanel()"
     [attr.aria-expanded]="showEmojiPanel()"
     aria-label="Emoji picker"
-  >😊</button>
+  ><mat-icon class="icon-sm">mood</mat-icon></button>
 
   <div class="composer-field">
     <textarea
@@ -37,6 +37,6 @@
     (click)="send()"
     aria-label="Send message"
   >
-    <mat-icon style="font-size:18px;width:18px;height:18px">send</mat-icon>
+    <mat-icon class="icon-sm">send</mat-icon>
   </button>
 </div>
