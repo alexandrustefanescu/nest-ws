@@ -9,93 +9,100 @@
     <a routerLink="/" class="back-link">← Back to rooms</a>
   </div>
 } @else {
-  <header class="room-header rounded-md m-2">
-    <mat-icon style="color:var(--text-faint);font-size:18px;width:18px;height:18px">chat_bubble_outline</mat-icon>
-    <span class="room-name">{{ room()!.name }}</span>
-    <button
-      class="online-indicator"
-      [matMenuTriggerFor]="usersMenu"
-      aria-label="View room members"
-    >
-      <span class="presence-dot" aria-hidden="true"></span>
-      {{ users().length }} online
-    </button>
-    <mat-menu #usersMenu="matMenu" xPosition="before">
-      @for (user of users(); track user.userId) {
-        <button mat-menu-item class="user-list-item">
-          <span class="user-avatar" [style.background]="avatarColor(user.userId)">
-            {{ user.userId[0].toUpperCase() }}
-          </span>
-          <span class="user-name-text">{{ user.userId }}</span>
-          @if (user.userId === identity.userId()) {
-            <span class="you-badge">you</span>
-          }
+  <div class="flex h-full">
+    <!-- Main room content -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- Header -->
+      <header class="room-header rounded-md m-2">
+        <mat-icon style="color:var(--text-faint);font-size:18px;width:18px;height:18px">chat_bubble_outline</mat-icon>
+        <span class="room-name">{{ room()!.name }}</span>
+        <button
+          class="online-indicator"
+          (click)="toggleUsersSidebar()"
+          aria-label="Toggle members panel"
+        >
+          <span class="presence-dot" aria-hidden="true"></span>
+          {{ users().length }} online
         </button>
-      }
-    </mat-menu>
-    <button
-      mat-icon-button
-      [matMenuTriggerFor]="roomMenu"
-      class="header-action"
-      aria-label="Room options"
-    >
-      <mat-icon>more_vert</mat-icon>
-    </button>
-    <mat-menu #roomMenu="matMenu" xPosition="before">
-      <button mat-menu-item class="menu-item-danger" (click)="onClearChat()">
-        <mat-icon>delete</mat-icon>
-        <span>Clear chat</span>
-      </button>
-    </mat-menu>
-  </header>
+        <button
+          mat-icon-button
+          [matMenuTriggerFor]="roomMenu"
+          class="header-action"
+          aria-label="Room options"
+        >
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #roomMenu="matMenu" xPosition="before">
+          <button mat-menu-item class="menu-item-danger" (click)="onClearChat()">
+            <mat-icon>delete</mat-icon>
+            <span>Clear chat</span>
+          </button>
+        </mat-menu>
+      </header>
 
-  <div
-    #messageList
-    id="main-messages"
-    class="message-list"
-    role="log"
-    aria-live="polite"
-    aria-relevant="additions"
-    aria-label="Messages"
-    (scroll)="onScroll($event)"
-  >
-    @if (isLoadingMore()) {
-      <div class="loading-more">
-        <mat-spinner diameter="20" />
+      <!-- Messages -->
+      <div
+        #messageList
+        id="main-messages"
+        class="message-list"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="Messages"
+        (scroll)="onScroll($event)"
+      >
+        @if (isLoadingMore()) {
+          <div class="loading-more">
+            <mat-spinner diameter="20" />
+          </div>
+        }
+        @if (enrichedMessages().length === 0) {
+          <div class="empty-messages">No messages yet — say hi!</div>
+        }
+        @for (item of enrichedMessages(); track item.msg.id) {
+          <app-message-bubble
+            [message]="item.msg"
+            [currentUserId]="identity.userId()"
+            [firstInGroup]="item.firstInGroup"
+            [lastInGroup]="item.lastInGroup"
+            [reactions]="chat.roomReactions()[item.msg.id]"
+            [roomId]="roomId()"
+          />
+        }
+      </div>
+
+      <!-- Typing indicator -->
+      @if (typingList().length > 0) {
+        <div class="typing-area" aria-live="polite">
+          <span class="typing-dot" aria-hidden="true"></span>
+          <span class="typing-dot" aria-hidden="true"></span>
+          <span class="typing-dot" aria-hidden="true"></span>
+          <span class="typing-names">
+            {{ typingList().join(', ') }} {{ typingList().length === 1 ? 'is' : 'are' }} typing
+          </span>
+        </div>
+      } @else {
+        <div class="typing-area" aria-hidden="true"></div>
+      }
+
+      <!-- Composer -->
+      <app-message-composer
+        [disabled]="chat.connectionState() !== 'connected'"
+        (messageSent)="onSend($event)"
+        (typingChanged)="onTypingChanged($event)"
+        class="shrink-0"
+      />
+    </div>
+
+    <!-- Users sidebar (mobile: fixed overlay, desktop: flex sidebar) -->
+    @if (showUsersSidebar()) {
+      <div class="fixed inset-0 z-40 md:static md:inset-auto">
+        <app-users-sidebar
+          [users]="users()"
+          [currentUserId]="identity.userId()"
+          (closeRequested)="closeSidebar()"
+        />
       </div>
     }
-    @if (enrichedMessages().length === 0) {
-      <div class="empty-messages">No messages yet — say hi!</div>
-    }
-    @for (item of enrichedMessages(); track item.msg.id) {
-      <app-message-bubble
-        [message]="item.msg"
-        [currentUserId]="identity.userId()"
-        [firstInGroup]="item.firstInGroup"
-        [lastInGroup]="item.lastInGroup"
-        [reactions]="chat.roomReactions()[item.msg.id]"
-        [roomId]="roomId()"
-      />
-    }
   </div>
-
-  @if (typingList().length > 0) {
-    <div class="typing-area" aria-live="polite">
-      <span class="typing-dot" aria-hidden="true"></span>
-      <span class="typing-dot" aria-hidden="true"></span>
-      <span class="typing-dot" aria-hidden="true"></span>
-      <span class="typing-names">
-        {{ typingList().join(', ') }} {{ typingList().length === 1 ? 'is' : 'are' }} typing
-      </span>
-    </div>
-  } @else {
-    <div class="typing-area" aria-hidden="true"></div>
-  }
-
-  <app-message-composer
-    [disabled]="chat.connectionState() !== 'connected'"
-    (messageSent)="onSend($event)"
-    (typingChanged)="onTypingChanged($event)"
-    class="shrink-0"
-  />
 }

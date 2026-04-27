@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import type { User } from '@repo/shared-types';
+import type { RoomUser } from '@repo/shared-types';
 
 @Component({
   selector: 'app-users-sidebar',
@@ -8,11 +8,17 @@ import type { User } from '@repo/shared-types';
   standalone: true,
 })
 export class UsersSidebar {
-  readonly users = input.required<User[]>();
+  readonly users = input.required<RoomUser[]>();
   readonly currentUserId = input.required<string>();
   readonly closeRequested = output<void>();
 
   closeBackdrop(): void {
     this.closeRequested.emit();
+  }
+
+  getUserColor(userId: string): string {
+    const hash = userId.charCodeAt(0);
+    const hue = ((hash * 33) ^ 5381) % 360;
+    return `hsl(${hue}, 70%, 50%)`;
   }
 }
