@@ -14,7 +14,13 @@ async function bootstrap() {
     { cors: false }
   );
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
 
   await app.register(helmet);
   await app.register(fastifyCsrf);
