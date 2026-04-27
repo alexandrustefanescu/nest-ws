@@ -9,9 +9,7 @@
   color: oklch(98% 0.005 270);
 }
 
-.bubble-row { display: flex; position: relative; z-index: 50; }
-.bubble-row.own { justify-content: flex-end; }
-.bubble-row.other { justify-content: flex-start; }
+.bubble-row { display: flex; position: relative; z-index: 50; justify-content: flex-start; }
 
 .bubble {
   position: relative; max-width: 65ch;
