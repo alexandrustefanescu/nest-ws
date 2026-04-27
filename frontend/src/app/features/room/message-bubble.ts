@@ -15,13 +15,13 @@ function userHue(id: string): number {
   selector: 'app-message-bubble',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatIconModule],
-  templateUrl: './message-bubble.component.html',
-  styleUrl: './message-bubble.component.css',
+  templateUrl: './message-bubble.html',
+  styleUrl: './message-bubble.css',
   host: {
     '[style.margin-top.px]': 'firstInGroup() ? 16 : 4',
   },
 })
-export class MessageBubbleComponent {
+export class MessageBubble {
   readonly message = input.required<Message>();
   readonly currentUserId = input.required<string>();
   readonly firstInGroup = input(true);
