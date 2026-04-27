@@ -1,0 +1,78 @@
+@if (chat.connectionState() === 'connecting' && room() === undefined) {
+  <div class="flex items-center justify-center h-full">
+    <mat-spinner diameter="36" />
+  </div>
+} @else if (room() === undefined) {
+  <div class="flex flex-col items-center justify-center h-full gap-3">
+    <mat-icon style="color:var(--text-faint);font-size:32px">error_outline</mat-icon>
+    <p style="color:var(--text-muted);font-size:14px">Room not found.</p>
+    <a routerLink="/" style="color:var(--accent);font-size:13px;text-decoration:none;font-weight:500;">← Back to rooms</a>
+  </div>
+} @else {
+  <header class="room-header">
+    <mat-icon style="color:var(--text-faint);font-size:18px;width:18px;height:18px">chat_bubble_outline</mat-icon>
+    <span class="room-name">{{ room()!.name }}</span>
+    <div class="online-indicator">
+      <span class="presence-dot" aria-hidden="true"></span>
+      {{ users().length }} online
+    </div>
+    <button
+      (click)="onClearChat()"
+      style="background:none;border:none;cursor:pointer;color:var(--text-faint);display:flex;align-items:center;padding:4px"
+      aria-label="Clear chat"
+      title="Clear chat"
+    >
+      <mat-icon style="font-size:18px;width:18px;height:18px">delete_sweep</mat-icon>
+    </button>
+  </header>
+
+  <div
+    #messageList
+    id="main-messages"
+    class="message-list"
+    role="log"
+    aria-live="polite"
+    aria-relevant="additions"
+    aria-label="Messages"
+    (scroll)="onScroll($event)"
+  >
+    @if (isLoadingMore()) {
+      <div style="display:flex;justify-content:center;padding:8px">
+        <mat-spinner diameter="20" />
+      </div>
+    }
+    @if (enrichedMessages().length === 0) {
+      <div class="empty-messages">No messages yet — say hi!</div>
+    }
+    @for (item of enrichedMessages(); track item.msg.id) {
+      <app-message-bubble
+        [message]="item.msg"
+        [currentUserId]="identity.userId()"
+        [firstInGroup]="item.firstInGroup"
+        [lastInGroup]="item.lastInGroup"
+        [reactions]="chat.roomReactions()[item.msg.id]"
+        [roomId]="roomId()"
+      />
+    }
+  </div>
+
+  @if (typingList().length > 0) {
+    <div class="typing-area" aria-live="polite">
+      <span class="typing-dot" aria-hidden="true"></span>
+      <span class="typing-dot" aria-hidden="true"></span>
+      <span class="typing-dot" aria-hidden="true"></span>
+      <span class="typing-names">
+        {{ typingList().join(', ') }} {{ typingList().length === 1 ? 'is' : 'are' }} typing
+      </span>
+    </div>
+  } @else {
+    <div class="typing-area" aria-hidden="true"></div>
+  }
+
+  <app-message-composer
+    [disabled]="chat.connectionState() !== 'connected'"
+    (messageSent)="onSend($event)"
+    (typingChanged)="onTypingChanged($event)"
+    class="shrink-0"
+  />
+}

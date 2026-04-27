@@ -42,14 +42,27 @@ export class MessageBubble {
   readonly time = computed(() =>
     new Date(this.message().createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   );
-  readonly hasReactions = computed(() => Object.keys(this.reactions()).length > 0);
-  readonly reactionEntries = computed(() =>
-    Object.entries(this.reactions()).map(([emoji, users]) => ({
-      emoji,
-      count: users.length,
-      isMine: users.includes(this.currentUserId()),
-    })),
-  );
+  readonly hasReactions = computed(() => {
+    try {
+      const r = this.reactions() as Record<string, string[]> | null | undefined;
+      return r != null && Object.keys(r).length > 0;
+    } catch {
+      return false;
+    }
+  });
+  readonly reactionEntries = computed(() => {
+    try {
+      const reactions = this.reactions() as Record<string, string[]> | null | undefined;
+      if (!reactions) return [];
+      return Object.entries(reactions).map(([emoji, users]) => ({
+        emoji,
+        count: users.length,
+        isMine: users.includes(this.currentUserId()),
+      }));
+    } catch {
+      return [];
+    }
+  });
 
   togglePicker(): void {
     this.showPicker.update((v) => !v);
