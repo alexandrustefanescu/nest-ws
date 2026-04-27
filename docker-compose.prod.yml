@@ -31,6 +31,7 @@ services:
       NODE_ENV: production
       PORT: 4200
       API_URL: https://api.chat.coolify.webwedo.eu
+      ANGULAR_APP_BASE_URL: https://chat.coolify.webwedo.eu
     depends_on:
       - chat-backend
     restart: unless-stopped
