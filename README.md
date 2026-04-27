@@ -157,8 +157,8 @@ socket.on('reaction:updated', ({ messageId, reactions }) => console.log(reaction
 
 ```
 nest-ws/
-├── backend/            # NestJS application — see backend/README.md
-├── frontend/           # Angular application — see frontend/README.md
+├── backend/            # NestJS application — see [backend/README.md](backend/README.md)
+├── frontend/           # Angular application — see [frontend/README.md](frontend/README.md)
 ├── packages/
 │   └── shared-types/   # Pure TypeScript interfaces shared across both ends
 │       └── src/
