@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChatGateway } from './chat.gateway';
 import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
+import { WsThrottlerGuard } from '../guards/ws-throttler.guard';
 import { WsException } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
@@ -74,6 +75,7 @@ describe('ChatGateway', () => {
         ChatGateway,
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
+        { provide: WsThrottlerGuard, useValue: { canActivate: jest.fn().mockReturnValue(true), evict: jest.fn() } },
       ],
     }).compile();
 
