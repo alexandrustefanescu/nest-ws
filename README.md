@@ -1,54 +1,36 @@
-# WebSocket Chat Prototype
+# nest-ws — Real-time Chat
 
-A real-time chat backend built with NestJS, Socket.io, Fastify, and SQLite. Learning prototype for WebSocket fundamentals.
+Full-stack chat application built as a learning prototype for WebSocket fundamentals.
+
+**Backend:** NestJS 11 + Fastify + Socket.io + SQLite  
+**Frontend:** Angular 20+ (standalone components, signals, SSR)  
+**Shared:** Pure TypeScript contract interfaces in `@repo/shared-types`
 
 ## Features
 
 - Real-time messaging in chat rooms
-- User presence tracking (user lists per room)
-- Typing indicators
-- Message persistence with SQLite
-- WebSocket exception handling and validation
-- Event logging via interceptors
+- Emoji reactions per message (👍 ❤️ 😂 😮 😢 🔥)
+- Typing indicators with 5-second server-side expiry
+- Message history with cursor-based pagination (load more)
+- Per-user message delete, full room clear
+- User presence tracking per room
+- HTTP rate limiting + per-event WebSocket rate limits
+- Interactive API docs powered by **OpenAPI + Scalar** at `/docs`
 - Docker support
 
 ## Tech Stack
 
-- **Framework:** NestJS 11 with Fastify adapter
-- **WebSockets:** Socket.io (`@nestjs/platform-socket.io`)
-- **Database:** SQLite with TypeORM
-- **Validation:** NestJS Pipes (`WsException`)
-- **Middleware:** Interceptors, Exception Filters
-- **Testing:** Jest (unit + E2E)
-- **Container:** Docker + Docker Compose
-
-## Key Learning Concepts
-
-| Concept | Where |
+| Layer | Technology |
 |---|---|
-| **Gateways** | `src/gateways/chat.gateway.ts` |
-| **Pipes** | `src/pipes/` — applied via `@MessageBody(new Pipe())` |
-| **Interceptors** | `src/interceptors/logging.interceptor.ts` |
-| **Exception Filters** | `src/filters/ws-exception.filter.ts` |
-| **Socket.io rooms** | `client.join('room-{id}')` / `server.to('room-{id}').emit(...)` |
-| **Services** | `src/services/` — ChatService, RoomService |
-| **Entities** | `src/entities/` — Room, RoomUser, Message, TypingStatus |
-
-### Important: Pipe Placement in WebSocket Handlers
-
-Pipes **must** be applied to `@MessageBody()` directly, not at method level:
-
-```typescript
-// Correct — pipe runs only on the message body
-async handleJoinRoom(
-  @ConnectedSocket() client: Socket,
-  @MessageBody(new JoinRoomPipe()) data: { roomId: number; userId: string },
-)
-
-// Wrong — @UsePipes applies to ALL parameters including @ConnectedSocket()
-@UsePipes(new JoinRoomPipe())
-async handleJoinRoom(client: Socket, data: { roomId: number; userId: string })
-```
+| Backend framework | NestJS 11 + Fastify adapter |
+| WebSockets | Socket.io via `@nestjs/platform-socket.io` |
+| Database | SQLite + TypeORM |
+| Validation | class-validator DTOs + global ValidationPipe |
+| API docs | `@nestjs/swagger` (OpenAPI 3) + Scalar API Reference |
+| Frontend | Angular 20+ (standalone, signals, OnPush, SSR) |
+| Shared types | `@repo/shared-types` — pure TypeScript interfaces |
+| Package manager | pnpm workspace |
+| Testing | Jest (backend unit + e2e) |
 
 ## Getting Started
 
@@ -56,125 +38,140 @@ async handleJoinRoom(client: Socket, data: { roomId: number; userId: string })
 
 - Node.js 20+
 - pnpm
-- Docker (optional)
 
-### Installation
+### Install and run
 
 ```bash
-# Install dependencies
+# Install all workspace dependencies
 pnpm install
 
 # Seed initial rooms (general, random, dev)
-pnpm run seed
+pnpm --filter @repo/backend seed
 
-# Start development server
-pnpm run start:dev
-```
+# Backend dev server — http://localhost:3000
+pnpm --filter @repo/backend dev
 
-Server starts on `http://localhost:3000`. WebSocket connects on the same port.
-
-### Running Tests
-
-```bash
-# Unit tests
-pnpm run test
-
-# Unit tests in watch mode
-pnpm run test:watch
-
-# E2E tests
-pnpm run test:e2e
+# Frontend dev server — http://localhost:4200
+pnpm --filter @repo/frontend start
 ```
 
 ### Docker
 
 ```bash
-# Build and run
 docker-compose up
-
-# Available at http://localhost:3000
+# Backend:  http://localhost:3000
+# Frontend: http://localhost:4200
 ```
+
+### Tests
+
+```bash
+pnpm --filter @repo/backend test        # unit tests
+pnpm --filter @repo/backend test:e2e    # e2e tests
+pnpm -r build                           # full workspace build
+```
+
+## API Docs
+
+The backend exposes interactive API documentation at **`http://localhost:3000/docs`**.
+
+- Built with [`@nestjs/swagger`](https://docs.nestjs.com/openapi/introduction) — generates an OpenAPI 3 spec from decorators on controllers and DTOs.
+- Rendered by [**Scalar**](https://scalar.com) (`@scalar/fastify-api-reference`) — a modern, interactive alternative to Swagger UI.
+- The `websocket-events` tag documents Socket.io events as fake REST endpoints so they appear in the spec with full request/response shapes.
+
+The raw OpenAPI JSON is also available via the Scalar interface if you need it for code generation or import into tools like Postman or Insomnia.
 
 ## WebSocket API
 
-### Server → Client Events
+Connect via Socket.io at `ws://localhost:3000`.  
+All events and their schemas are also visible in the interactive docs at `/docs`.
+
+### Client → Server events
+
+| Event | Payload | Rate limit |
+|---|---|---|
+| `room:join` | `{ roomId: number, userId: string }` | 10 / min |
+| `room:leave` | `{ roomId: number, userId: string }` | 10 / min |
+| `room:create` | `{ name: string }` | 5 / min |
+| `room:delete` | `{ roomId: number }` | 5 / min |
+| `message:send` | `{ roomId, userId, text }` (max 500 chars) | 20 / min |
+| `message:delete` | `{ roomId, messageId, userId }` | 20 / min |
+| `messages:load-more` | `{ roomId, before: number }` | 20 / min |
+| `reaction:toggle` | `{ roomId, messageId, userId, emoji }` | 30 / min |
+| `typing:start` | `{ roomId, userId }` | 60 / min |
+| `typing:stop` | `{ roomId, userId }` | 60 / min |
+| `chat:clear` | `{ roomId, userId }` | 10 / min |
+
+### Server → Client events
 
 | Event | Payload | When |
 |---|---|---|
-| `rooms:list` | `Room[]` | On connect |
+| `rooms:list` | `Room[]` | On connect; after room create/delete |
 | `user:joined` | `{ userId, timestamp }` | Someone joined your room |
 | `user:left` | `{ userId, timestamp }` | Someone left your room |
-| `users:list` | `RoomUser[]` | After join/leave |
+| `users:list` | `RoomUser[]` | After any join or leave |
 | `message:new` | `{ id, roomId, userId, text, createdAt }` | New message in room |
-| `user:typing` | `{ userId, timestamp }` | Someone is typing |
+| `message:deleted` | `{ roomId, messageId }` | Message deleted |
+| `messages:history` | `{ roomId, messages, hasMore }` | On room join |
+| `reactions:snapshot` | `Record<messageId, ReactionMap>` | On room join |
+| `reaction:updated` | `{ messageId, reactions }` | Reaction toggled |
+| `user:typing` | `{ userId, timestamp }` | Someone started typing |
 | `user:typing-stopped` | `{ userId, timestamp }` | Someone stopped typing |
+| `chat:cleared` | `{ roomId }` | Room chat cleared |
 | `error` | `{ status: 'error', message, timestamp }` | Validation or business error |
 
-### Client → Server Events
-
-| Event | Payload |
-|---|---|
-| `room:join` | `{ roomId: number, userId: string }` |
-| `room:leave` | `{ roomId: number, userId: string }` |
-| `message:send` | `{ roomId: number, userId: string, text: string }` |
-| `typing:start` | `{ roomId: number, userId: string }` |
-| `typing:stop` | `{ roomId: number, userId: string }` |
-
-### Example (Socket.io client)
+### Quick example
 
 ```javascript
+import { io } from 'socket.io-client';
+
 const socket = io('http://localhost:3000');
 
+// Receive initial room list on connect
 socket.on('rooms:list', (rooms) => console.log(rooms));
 
+// Join a room and receive history
 socket.emit('room:join', { roomId: 1, userId: 'alice' });
-socket.on('user:joined', (data) => console.log(`${data.userId} joined`));
+socket.on('messages:history', ({ messages, hasMore }) => console.log(messages));
 
+// Send a message
 socket.emit('message:send', { roomId: 1, userId: 'alice', text: 'Hello!' });
 socket.on('message:new', (msg) => console.log(msg));
+
+// React to a message
+socket.emit('reaction:toggle', { roomId: 1, messageId: 42, userId: 'alice', emoji: '👍' });
+socket.on('reaction:updated', ({ messageId, reactions }) => console.log(reactions));
 ```
+
+## REST Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Service health check |
+| `GET` | `/api/rooms` | List all rooms |
+| `POST` | `/api/rooms` | Create a room (`{ name }`) |
+| `DELETE` | `/api/rooms/:id` | Delete a room |
+| `GET` | `/docs` | Scalar interactive API reference |
 
 ## Project Structure
 
 ```
-backend/src/
-├── common/          # filters, interceptors, guards
-├── config/          # env, database
-├── health/          # GET /health
-├── modules/
-│   ├── rooms/       # Room CRUD + REST controller + RoomsService
-│   ├── messaging/   # messages + reactions (MessagesService, ReactionsService)
-│   ├── presence/    # room users + typing (PresenceService, TypingService)
-│   ├── chat/        # ChatGateway + ConnectionRegistry
-│   └── docs/        # WS Swagger documentation
-├── app.module.ts    # composition root
-├── main.ts
-└── seed.ts
-
-frontend/src/app/
-├── core/            # singleton infra (chat socket, identity, theme)
-└── features/        # onboarding, shell, room, rooms
-
-packages/shared-types/src/
-├── entities.ts      # wire-format entity shapes
-├── events.ts        # event-name constants
-└── contracts/       # per-domain request/response interfaces
+nest-ws/
+├── backend/            # NestJS application — see backend/README.md
+├── frontend/           # Angular application — see frontend/README.md
+├── packages/
+│   └── shared-types/   # Pure TypeScript interfaces shared across both ends
+│       └── src/
+│           ├── entities.ts         # Room, RoomUser, Message, ReactionMap
+│           ├── events.ts           # SocketEvents const + SocketEventName type
+│           └── contracts/          # per-domain request/response interfaces
+├── docker-compose.yml
+└── pnpm-workspace.yaml
 ```
-
-WS event validation uses class-validator DTOs (one per event) that `implements` the
-shared-types contract interface. The global `WsExceptionFilter` formats all validation
-errors into the existing `{ status, message, timestamp }` envelope.
 
 ## Notes
 
-- No authentication (guards are out of scope — next step)
-- SQLite suitable for development; use PostgreSQL for production
-- Typing status expires after 5 seconds (ephemeral)
-- Messages persist indefinitely
-
-## Next Steps
-
-- Authentication with JWT guards
-- Message history pagination
-- Angular frontend
-- Redis adapter for horizontal scaling
+- No authentication — `userId` is a free-form string entered at onboarding
+- Typing indicators expire automatically after 5 seconds server-side
+- SQLite is fine for local dev; swap `database.config.ts` for PostgreSQL in prod
+- The Scalar `/docs` page documents WebSocket events as REST endpoints — this is a documentation pattern, not the actual transport
