@@ -101,7 +101,7 @@ function userHue(id: string): number {
     .reactions-row {
       display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;
     }
-    .bubble-row.own + .reactions-row { justify-content: flex-end; }
+    .reactions-row.own { justify-content: flex-end; }
 
     .reaction-pill {
       display: flex; align-items: center; gap: 3px;
@@ -145,7 +145,7 @@ function userHue(id: string): number {
       <article
         class="bubble"
         [class]="isOwn() ? 'own' : 'other'"
-        [style]="isOwn() ? null : otherBubbleStyle()"
+        [style]="otherBubbleStyle()"
         [attr.aria-label]="message().userId + ' at ' + time() + ': ' + message().text"
       >
         <p class="bubble-text">{{ message().text }}</p>
@@ -185,7 +185,7 @@ function userHue(id: string): number {
     </div>
 
     @if (hasReactions()) {
-      <div class="reactions-row" [class]="isOwn() ? 'own' : ''">
+      <div class="reactions-row" [class.own]="isOwn()">
         @for (entry of reactionEntries(); track entry.emoji) {
           <button
             class="reaction-pill"
@@ -218,24 +218,15 @@ export class MessageBubbleComponent {
 
   readonly isOwn = computed(() => this.message().userId === this.currentUserId());
 
-  readonly otherBubbleStyle = computed(() => {
-    if (this.isOwn()) return '';
-    const hue = userHue(this.message().userId);
-    return `--user-hue:${hue}`;
-  });
-
-  readonly authorStyle = computed(() => {
-    const hue = userHue(this.message().userId);
-    return `--user-hue:${hue}`;
-  });
+  private readonly hue = computed(() => userHue(this.message().userId));
+  readonly authorStyle = computed(() => `--user-hue:${this.hue()}`);
+  readonly otherBubbleStyle = computed(() => this.isOwn() ? null : `--user-hue:${this.hue()}`);
   readonly time = computed(() =>
     new Date(this.message().createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   );
-  readonly hasReactions = computed(() => 
-    Object.keys(this.reactions() ?? {}).length > 0
-  );
-  readonly reactionEntries = computed(() => 
-    Object.entries(this.reactions() ?? {}).map(([emoji, users]) => ({
+  readonly hasReactions = computed(() => Object.keys(this.reactions()).length > 0);
+  readonly reactionEntries = computed(() =>
+    Object.entries(this.reactions()).map(([emoji, users]) => ({
       emoji,
       count: users.length,
       isMine: users.includes(this.currentUserId()),
