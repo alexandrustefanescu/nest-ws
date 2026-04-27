@@ -4,7 +4,6 @@ import { ChatService } from './chat.service';
 import { Message } from '../modules/messaging/message.entity';
 import { RoomUser } from '../modules/presence/room-user.entity';
 import { TypingStatus } from '../modules/presence/typing-status.entity';
-import { MessageReaction } from '../modules/messaging/message-reaction.entity';
 
 describe('ChatService', () => {
   let service: ChatService;
@@ -28,27 +27,10 @@ describe('ChatService', () => {
     delete: jest.Mock;
     find: jest.Mock;
   };
-  let mockReactionRepository: {
-    findOne: jest.Mock;
-    create: jest.Mock;
-    save: jest.Mock;
-    delete: jest.Mock;
-    find: jest.Mock;
-    createQueryBuilder: jest.Mock;
-  };
-
   beforeEach(async () => {
     mockMessageRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn(), findOne: jest.fn() };
     mockRoomUserRepository = { find: jest.fn(), findOne: jest.fn(), create: jest.fn(), save: jest.fn(), delete: jest.fn() };
     mockTypingStatusRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn() };
-    mockReactionRepository = {
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
-      delete: jest.fn(),
-      find: jest.fn(),
-      createQueryBuilder: jest.fn(),
-    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -56,7 +38,6 @@ describe('ChatService', () => {
         { provide: getRepositoryToken(Message), useValue: mockMessageRepository },
         { provide: getRepositoryToken(RoomUser), useValue: mockRoomUserRepository },
         { provide: getRepositoryToken(TypingStatus), useValue: mockTypingStatusRepository },
-        { provide: getRepositoryToken(MessageReaction), useValue: mockReactionRepository },
       ],
     }).compile();
 
@@ -139,64 +120,4 @@ describe('ChatService', () => {
     expect(mockTypingStatusRepository.delete).toHaveBeenCalledWith({ roomId: 1 });
   });
 
-  describe('toggleReaction', () => {
-    it('should add a reaction when none exists', async () => {
-      mockReactionRepository.findOne.mockResolvedValue(null);
-      mockReactionRepository.create.mockReturnValue({ messageId: 1, userId: 'u1', emoji: '👍' });
-      mockReactionRepository.save.mockResolvedValue({ id: 1, messageId: 1, userId: 'u1', emoji: '👍' });
-      mockReactionRepository.find.mockResolvedValue([
-        { messageId: 1, userId: 'u1', emoji: '👍' },
-      ]);
-
-      const result = await service.toggleReaction(1, 'u1', '👍');
-
-      expect(mockReactionRepository.save).toHaveBeenCalledWith({ messageId: 1, userId: 'u1', emoji: '👍' });
-      expect(result).toEqual({ '👍': ['u1'] });
-    });
-
-    it('should remove a reaction when it already exists', async () => {
-      mockReactionRepository.findOne.mockResolvedValue({ id: 1, messageId: 1, userId: 'u1', emoji: '👍' });
-      mockReactionRepository.delete.mockResolvedValue({ affected: 1 });
-      mockReactionRepository.find.mockResolvedValue([]);
-
-      const result = await service.toggleReaction(1, 'u1', '👍');
-
-      expect(mockReactionRepository.delete).toHaveBeenCalledWith({ messageId: 1, userId: 'u1', emoji: '👍' });
-      expect(result).toEqual({});
-    });
-  });
-
-  describe('getReactionsForRoom', () => {
-    it('should return aggregated reactions keyed by messageId', async () => {
-      const mockQB = {
-        innerJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([
-          { messageId: 1, userId: 'u1', emoji: '👍' },
-          { messageId: 1, userId: 'u2', emoji: '👍' },
-          { messageId: 2, userId: 'u1', emoji: '❤️' },
-        ]),
-      };
-      mockReactionRepository.createQueryBuilder.mockReturnValue(mockQB);
-
-      const result = await service.getReactionsForRoom(5);
-
-      expect(result).toEqual({
-        1: { '👍': ['u1', 'u2'] },
-        2: { '❤️': ['u1'] },
-      });
-    });
-
-    it('should return empty object when no reactions', async () => {
-      const mockQB = {
-        innerJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([]),
-      };
-      mockReactionRepository.createQueryBuilder.mockReturnValue(mockQB);
-
-      const result = await service.getReactionsForRoom(5);
-      expect(result).toEqual({});
-    });
-  });
 });

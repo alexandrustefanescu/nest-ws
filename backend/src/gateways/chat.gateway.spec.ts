@@ -3,6 +3,7 @@ import { ChatGateway } from './chat.gateway';
 import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
 import { MessagesService } from '../modules/messaging/messages.service';
+import { ReactionsService } from '../modules/messaging/reactions.service';
 import { WsThrottlerGuard } from '../guards/ws-throttler.guard';
 import { WsException } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -33,6 +34,8 @@ describe('ChatGateway', () => {
     markUserTyping: jest.Mock;
     removeUserTyping: jest.Mock;
     clearRoomData: jest.Mock;
+  };
+  let mockReactionsService: {
     toggleReaction: jest.Mock;
     getReactionsForRoom: jest.Mock;
   };
@@ -60,6 +63,9 @@ describe('ChatGateway', () => {
       markUserTyping: jest.fn(),
       removeUserTyping: jest.fn(),
       clearRoomData: jest.fn(),
+    };
+
+    mockReactionsService = {
       toggleReaction: jest.fn(),
       getReactionsForRoom: jest.fn().mockResolvedValue({}),
     };
@@ -85,6 +91,7 @@ describe('ChatGateway', () => {
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
         { provide: MessagesService, useValue: mockMessagesService },
+        { provide: ReactionsService, useValue: mockReactionsService },
         { provide: WsThrottlerGuard, useValue: mockWsThrottlerGuard },
       ],
     }).compile();
@@ -230,7 +237,7 @@ describe('ChatGateway', () => {
     mockRoomService.getRoomById.mockResolvedValue(room);
     mockChatService.addUserToRoom.mockResolvedValue({});
     mockChatService.getUsersInRoom.mockResolvedValue([]);
-    mockChatService.getReactionsForRoom.mockResolvedValue({ 1: { '👍': ['u1'] } });
+    mockReactionsService.getReactionsForRoom.mockResolvedValue({ 1: { '👍': ['u1'] } });
 
     await gateway.handleJoinRoom(mockSocket, { roomId: 1, userId: 'user1' });
 
@@ -238,7 +245,7 @@ describe('ChatGateway', () => {
   });
 
   it('should toggle reaction and broadcast reaction:updated', async () => {
-    mockChatService.toggleReaction.mockResolvedValue({ '👍': ['u1'] });
+    mockReactionsService.toggleReaction.mockResolvedValue({ '👍': ['u1'] });
 
     await gateway.handleToggleReaction(mockSocket, {
       roomId: 1,
@@ -247,7 +254,7 @@ describe('ChatGateway', () => {
       emoji: '👍',
     });
 
-    expect(mockChatService.toggleReaction).toHaveBeenCalledWith(42, 'u1', '👍');
+    expect(mockReactionsService.toggleReaction).toHaveBeenCalledWith(42, 'u1', '👍');
     expect(mockServer.to).toHaveBeenCalledWith('room-1');
     expect(mockTo.emit).toHaveBeenCalledWith('reaction:updated', {
       messageId: 42,
@@ -261,7 +268,7 @@ describe('ChatGateway', () => {
     mockRoomService.getRoomById.mockResolvedValue(room);
     mockChatService.addUserToRoom.mockResolvedValue({});
     mockChatService.getUsersInRoom.mockResolvedValue([]);
-    mockChatService.getReactionsForRoom.mockResolvedValue({});
+    mockReactionsService.getReactionsForRoom.mockResolvedValue({});
     mockMessagesService.getMessageHistory.mockResolvedValue(history);
 
     await gateway.handleJoinRoom(mockSocket, { roomId: 1, userId: 'u1' });
@@ -281,7 +288,7 @@ describe('ChatGateway', () => {
     mockRoomService.getRoomById.mockResolvedValue(room);
     mockChatService.addUserToRoom.mockResolvedValue({});
     mockChatService.getUsersInRoom.mockResolvedValue([]);
-    mockChatService.getReactionsForRoom.mockResolvedValue({});
+    mockReactionsService.getReactionsForRoom.mockResolvedValue({});
     mockMessagesService.getMessageHistory.mockResolvedValue(history);
 
     await gateway.handleJoinRoom(mockSocket, { roomId: 1, userId: 'u1' });

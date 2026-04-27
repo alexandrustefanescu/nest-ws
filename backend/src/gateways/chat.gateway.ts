@@ -13,6 +13,7 @@ import { OnModuleInit, UseFilters, UseGuards, UseInterceptors, UsePipes, Validat
 import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
 import { MessagesService } from '../modules/messaging/messages.service';
+import { ReactionsService } from '../modules/messaging/reactions.service';
 import { WsThrottlerGuard, WsThrottle } from '../guards/ws-throttler.guard';
 import { WsExceptionFilter } from '../filters/ws-exception.filter';
 import { LoggingInterceptor } from '../interceptors/logging.interceptor';
@@ -50,6 +51,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
     private readonly messagesService: MessagesService,
+    private readonly reactionsService: ReactionsService,
     private readonly wsThrottlerGuard: WsThrottlerGuard,
   ) {}
 
@@ -107,7 +109,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     const users = await this.chatService.getUsersInRoom(roomId);
     this.server.to(`room-${roomId}`).emit('users:list', users);
 
-    const snapshot = await this.chatService.getReactionsForRoom(roomId);
+    const snapshot = await this.reactionsService.getReactionsForRoom(roomId);
     client.emit('reactions:snapshot', snapshot);
 
     const history = await this.messagesService.getMessageHistory(roomId);
@@ -216,7 +218,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: ToggleReactionDto,
   ) {
     const { roomId, messageId, userId, emoji } = data;
-    const reactions = await this.chatService.toggleReaction(messageId, userId, emoji);
+    const reactions = await this.reactionsService.toggleReaction(messageId, userId, emoji);
     this.server.to(`room-${roomId}`).emit('reaction:updated', { messageId, reactions });
   }
 
