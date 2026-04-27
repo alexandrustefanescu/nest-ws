@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { Message } from '../entities/message.entity';
-import { RoomUser } from '../entities/room-user.entity';
-import { TypingStatus } from '../entities/typing-status.entity';
-import { MessageReaction } from '../entities/message-reaction.entity';
+import { Message } from '../modules/messaging/message.entity';
+import { RoomUser } from '../modules/presence/room-user.entity';
+import { TypingStatus } from '../modules/presence/typing-status.entity';
+import { MessageReaction } from '../modules/messaging/message-reaction.entity';
 
 @Injectable()
 export class ChatService {

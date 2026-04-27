@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { Room } from './room.entity';
+import { Room } from '../rooms/room.entity';
 
 @Entity('messages')
 export class Message {

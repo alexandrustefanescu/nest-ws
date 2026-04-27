@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Delete, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RoomService } from '../services/room.service';
-import { Room } from '../entities/room.entity';
-import { CreateRoomDto } from '../dto/create-room.dto';
+import { Room } from '../modules/rooms/room.entity';
+import { CreateRoomDto } from '../modules/rooms/dto/create-room.dto';
 
 @ApiTags('rooms')
 @Controller('api/rooms')

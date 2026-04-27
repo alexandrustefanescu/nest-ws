@@ -1,8 +1,8 @@
 import { Controller, Get, Post, HttpCode } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JoinRoomDto } from '../dto/join-room.dto';
-import { SendMessageDto } from '../dto/send-message.dto';
-import { TypingDto } from '../dto/typing.dto';
+import { JoinRoomDto } from '../modules/presence/dto/join-room.dto';
+import { SendMessageDto } from '../modules/messaging/dto/send-message.dto';
+import { TypingDto } from '../modules/presence/dto/typing.dto';
 import {
   RoomsListEventDto,
   UserJoinedEventDto,

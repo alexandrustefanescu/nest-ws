@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { databaseConfig } from './database.config';
-import { Room } from './entities/room.entity';
-import { RoomUser } from './entities/room-user.entity';
-import { Message } from './entities/message.entity';
-import { TypingStatus } from './entities/typing-status.entity';
-import { MessageReaction } from './entities/message-reaction.entity';
+import { Room } from './modules/rooms/room.entity';
+import { RoomUser } from './modules/presence/room-user.entity';
+import { Message } from './modules/messaging/message.entity';
+import { TypingStatus } from './modules/presence/typing-status.entity';
+import { MessageReaction } from './modules/messaging/message-reaction.entity';
 import { ChatGateway } from './gateways/chat.gateway';
 import { ChatService } from './services/chat.service';
 import { RoomService } from './services/room.service';
