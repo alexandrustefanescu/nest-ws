@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { OnModuleInit, UseFilters, UseGuards, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
+import { MessagesService } from '../modules/messaging/messages.service';
 import { WsThrottlerGuard, WsThrottle } from '../guards/ws-throttler.guard';
 import { WsExceptionFilter } from '../filters/ws-exception.filter';
 import { LoggingInterceptor } from '../interceptors/logging.interceptor';
@@ -48,6 +49,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   constructor(
     private readonly chatService: ChatService,
     private readonly roomService: RoomService,
+    private readonly messagesService: MessagesService,
     private readonly wsThrottlerGuard: WsThrottlerGuard,
   ) {}
 
@@ -108,7 +110,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     const snapshot = await this.chatService.getReactionsForRoom(roomId);
     client.emit('reactions:snapshot', snapshot);
 
-    const history = await this.chatService.getMessageHistory(roomId);
+    const history = await this.messagesService.getMessageHistory(roomId);
     client.emit('messages:history', {
       roomId,
       messages: history,
@@ -130,7 +132,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
       throw new WsException('Room not found');
     }
 
-    const message = await this.chatService.saveMessage(roomId, userId, text);
+    const message = await this.messagesService.saveMessage(roomId, userId, text);
 
     this.server.to(`room-${roomId}`).emit('message:new', {
       id: message.id,
@@ -241,7 +243,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: LoadMoreDto,
   ): Promise<{ messages: Message[]; hasMore: boolean }> {
     const { roomId, before } = data;
-    const messages = await this.chatService.getMessageHistory(roomId, before);
+    const messages = await this.messagesService.getMessageHistory(roomId, before);
     return { messages, hasMore: messages.length === 50 };
   }
 
@@ -253,7 +255,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: DeleteMessageDto,
   ): Promise<void> {
     const { roomId, messageId, userId } = data;
-    await this.chatService.deleteMessage(messageId, userId);
+    await this.messagesService.deleteMessage(messageId, userId);
     this.server.to(`room-${roomId}`).emit('message:deleted', { roomId, messageId });
   }
 
@@ -265,7 +267,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: ClearChatDto,
   ): Promise<void> {
     const { roomId } = data;
-    await this.chatService.clearRoomMessages(roomId);
+    await this.messagesService.clearRoomMessages(roomId);
     this.server.to(`room-${roomId}`).emit('chat:cleared', { roomId });
   }
 

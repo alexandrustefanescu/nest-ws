@@ -63,18 +63,6 @@ describe('ChatService', () => {
     service = module.get<ChatService>(ChatService);
   });
 
-  it('should save a message', async () => {
-    const mockMessage = { id: 1, roomId: 1, userId: 'user1', text: 'Hello', createdAt: new Date() };
-    mockMessageRepository.create.mockReturnValue(mockMessage);
-    mockMessageRepository.save.mockResolvedValue(mockMessage);
-
-    const result = await service.saveMessage(1, 'user1', 'Hello');
-
-    expect(result).toEqual(mockMessage);
-    expect(mockMessageRepository.create).toHaveBeenCalledWith({ roomId: 1, userId: 'user1', text: 'Hello' });
-    expect(mockMessageRepository.save).toHaveBeenCalledWith(mockMessage);
-  });
-
   it('should get users in a room', async () => {
     const mockUsers = [
       { id: 1, roomId: 1, userId: 'user1', joinedAt: new Date() },
@@ -176,75 +164,6 @@ describe('ChatService', () => {
       expect(mockReactionRepository.delete).toHaveBeenCalledWith({ messageId: 1, userId: 'u1', emoji: '👍' });
       expect(result).toEqual({});
     });
-  });
-
-  describe('getMessageHistory', () => {
-    it('returns last 50 messages in ascending order when no cursor given', async () => {
-      const msgs = [
-        { id: 1, roomId: 1, userId: 'u1', text: 'a', createdAt: new Date() },
-        { id: 2, roomId: 1, userId: 'u1', text: 'b', createdAt: new Date() },
-      ];
-      mockMessageRepository.find.mockResolvedValue([...msgs].reverse());
-
-      const result = await service.getMessageHistory(1);
-
-      expect(mockMessageRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { roomId: 1 },
-          order: { id: 'DESC' },
-          take: 50,
-        }),
-      );
-      expect(result).toEqual(msgs);
-    });
-
-    it('applies before cursor when provided', async () => {
-      mockMessageRepository.find.mockResolvedValue([]);
-
-      await service.getMessageHistory(1, 10);
-
-      expect(mockMessageRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ roomId: 1 }),
-          order: { id: 'DESC' },
-          take: 50,
-        }),
-      );
-    });
-  });
-
-  describe('deleteMessage', () => {
-    it('deletes the message when userId matches author', async () => {
-      const msg = { id: 5, roomId: 1, userId: 'u1', text: 'hi', createdAt: new Date() };
-      mockMessageRepository.findOne.mockResolvedValue(msg);
-      mockMessageRepository.delete.mockResolvedValue({ affected: 1 });
-
-      await service.deleteMessage(5, 'u1');
-
-      expect(mockMessageRepository.delete).toHaveBeenCalledWith({ id: 5 });
-    });
-
-    it('throws WsException when message not found', async () => {
-      mockMessageRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.deleteMessage(99, 'u1')).rejects.toThrow('Not found');
-    });
-
-    it('throws WsException when userId is not the author', async () => {
-      const msg = { id: 5, roomId: 1, userId: 'author', text: 'hi', createdAt: new Date() };
-      mockMessageRepository.findOne.mockResolvedValue(msg);
-
-      await expect(service.deleteMessage(5, 'other-user')).rejects.toThrow('Forbidden');
-    });
-  });
-
-  it('clearRoomMessages deletes only messages, not users', async () => {
-    mockMessageRepository.delete.mockResolvedValue({ affected: 5 });
-
-    await service.clearRoomMessages(1);
-
-    expect(mockMessageRepository.delete).toHaveBeenCalledWith({ roomId: 1 });
-    expect(mockRoomUserRepository.delete).not.toHaveBeenCalled();
   });
 
   describe('getReactionsForRoom', () => {

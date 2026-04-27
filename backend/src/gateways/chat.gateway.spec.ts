@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChatGateway } from './chat.gateway';
 import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
+import { MessagesService } from '../modules/messaging/messages.service';
 import { WsThrottlerGuard } from '../guards/ws-throttler.guard';
 import { WsException } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
@@ -25,7 +26,6 @@ const mockSocket = {
 describe('ChatGateway', () => {
   let gateway: ChatGateway;
   let mockChatService: {
-    saveMessage: jest.Mock;
     getUsersInRoom: jest.Mock;
     addUserToRoom: jest.Mock;
     removeUserFromRoom: jest.Mock;
@@ -35,6 +35,9 @@ describe('ChatGateway', () => {
     clearRoomData: jest.Mock;
     toggleReaction: jest.Mock;
     getReactionsForRoom: jest.Mock;
+  };
+  let mockMessagesService: {
+    saveMessage: jest.Mock;
     getMessageHistory: jest.Mock;
     deleteMessage: jest.Mock;
     clearRoomMessages: jest.Mock;
@@ -50,7 +53,6 @@ describe('ChatGateway', () => {
     mockWsThrottlerGuard = { canActivate: jest.fn().mockReturnValue(true), evict: jest.fn() };
 
     mockChatService = {
-      saveMessage: jest.fn(),
       getUsersInRoom: jest.fn().mockResolvedValue([]),
       addUserToRoom: jest.fn(),
       removeUserFromRoom: jest.fn(),
@@ -60,6 +62,10 @@ describe('ChatGateway', () => {
       clearRoomData: jest.fn(),
       toggleReaction: jest.fn(),
       getReactionsForRoom: jest.fn().mockResolvedValue({}),
+    };
+
+    mockMessagesService = {
+      saveMessage: jest.fn(),
       getMessageHistory: jest.fn().mockResolvedValue([]),
       deleteMessage: jest.fn(),
       clearRoomMessages: jest.fn(),
@@ -78,6 +84,7 @@ describe('ChatGateway', () => {
         ChatGateway,
         { provide: ChatService, useValue: mockChatService },
         { provide: RoomService, useValue: mockRoomService },
+        { provide: MessagesService, useValue: mockMessagesService },
         { provide: WsThrottlerGuard, useValue: mockWsThrottlerGuard },
       ],
     }).compile();
@@ -123,11 +130,11 @@ describe('ChatGateway', () => {
     const room = { id: 1, name: 'general', createdAt: new Date() };
     const message = { id: 1, roomId: 1, userId: 'user1', text: 'Hello', createdAt: new Date() };
     mockRoomService.getRoomById.mockResolvedValue(room);
-    mockChatService.saveMessage.mockResolvedValue(message);
+    mockMessagesService.saveMessage.mockResolvedValue(message);
 
     await gateway.handleSendMessage(mockSocket, { roomId: 1, userId: 'user1', text: 'Hello' });
 
-    expect(mockChatService.saveMessage).toHaveBeenCalledWith(1, 'user1', 'Hello');
+    expect(mockMessagesService.saveMessage).toHaveBeenCalledWith(1, 'user1', 'Hello');
     expect(mockServer.to).toHaveBeenCalledWith('room-1');
   });
 
@@ -255,11 +262,11 @@ describe('ChatGateway', () => {
     mockChatService.addUserToRoom.mockResolvedValue({});
     mockChatService.getUsersInRoom.mockResolvedValue([]);
     mockChatService.getReactionsForRoom.mockResolvedValue({});
-    mockChatService.getMessageHistory.mockResolvedValue(history);
+    mockMessagesService.getMessageHistory.mockResolvedValue(history);
 
     await gateway.handleJoinRoom(mockSocket, { roomId: 1, userId: 'u1' });
 
-    expect(mockChatService.getMessageHistory).toHaveBeenCalledWith(1);
+    expect(mockMessagesService.getMessageHistory).toHaveBeenCalledWith(1);
     expect(mockSocket.emit).toHaveBeenCalledWith(
       'messages:history',
       { roomId: 1, messages: history, hasMore: false },
@@ -275,7 +282,7 @@ describe('ChatGateway', () => {
     mockChatService.addUserToRoom.mockResolvedValue({});
     mockChatService.getUsersInRoom.mockResolvedValue([]);
     mockChatService.getReactionsForRoom.mockResolvedValue({});
-    mockChatService.getMessageHistory.mockResolvedValue(history);
+    mockMessagesService.getMessageHistory.mockResolvedValue(history);
 
     await gateway.handleJoinRoom(mockSocket, { roomId: 1, userId: 'u1' });
 
@@ -287,30 +294,30 @@ describe('ChatGateway', () => {
 
   it('handleLoadMore returns paginated messages via ack', async () => {
     const history = [{ id: 5, roomId: 1, userId: 'u1', text: 'old', createdAt: new Date() }];
-    mockChatService.getMessageHistory.mockResolvedValue(history);
+    mockMessagesService.getMessageHistory.mockResolvedValue(history);
 
     const result = await gateway.handleLoadMore({ roomId: 1, before: 10 });
 
-    expect(mockChatService.getMessageHistory).toHaveBeenCalledWith(1, 10);
+    expect(mockMessagesService.getMessageHistory).toHaveBeenCalledWith(1, 10);
     expect(result).toEqual({ messages: history, hasMore: false });
   });
 
   it('handleDeleteMessage broadcasts message:deleted to room', async () => {
-    mockChatService.deleteMessage.mockResolvedValue(undefined);
+    mockMessagesService.deleteMessage.mockResolvedValue(undefined);
 
     await gateway.handleDeleteMessage(mockSocket, { roomId: 1, messageId: 42, userId: 'u1' });
 
-    expect(mockChatService.deleteMessage).toHaveBeenCalledWith(42, 'u1');
+    expect(mockMessagesService.deleteMessage).toHaveBeenCalledWith(42, 'u1');
     expect(mockServer.to).toHaveBeenCalledWith('room-1');
     expect(mockTo.emit).toHaveBeenCalledWith('message:deleted', { roomId: 1, messageId: 42 });
   });
 
   it('handleClearChat broadcasts chat:cleared to room', async () => {
-    mockChatService.clearRoomMessages.mockResolvedValue(undefined);
+    mockMessagesService.clearRoomMessages.mockResolvedValue(undefined);
 
     await gateway.handleClearChat(mockSocket, { roomId: 1, userId: 'u1' });
 
-    expect(mockChatService.clearRoomMessages).toHaveBeenCalledWith(1);
+    expect(mockMessagesService.clearRoomMessages).toHaveBeenCalledWith(1);
     expect(mockServer.to).toHaveBeenCalledWith('room-1');
     expect(mockTo.emit).toHaveBeenCalledWith('chat:cleared', { roomId: 1 });
   });

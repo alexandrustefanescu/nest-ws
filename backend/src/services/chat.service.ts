@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Message } from '../modules/messaging/message.entity';
 import { RoomUser } from '../modules/presence/room-user.entity';
 import { TypingStatus } from '../modules/presence/typing-status.entity';
@@ -19,34 +19,6 @@ export class ChatService {
     @InjectRepository(MessageReaction)
     private reactionRepository: Repository<MessageReaction>,
   ) {}
-
-  async saveMessage(roomId: number, userId: string, text: string): Promise<Message> {
-    const message = this.messageRepository.create({ roomId, userId, text });
-    return this.messageRepository.save(message);
-  }
-
-  async getMessageHistory(roomId: number, before?: number, limit = 50): Promise<Message[]> {
-    const where = before !== undefined
-      ? { roomId, id: LessThan(before) }
-      : { roomId };
-    const messages = await this.messageRepository.find({
-      where,
-      order: { id: 'DESC' },
-      take: limit,
-    });
-    return messages.reverse();
-  }
-
-  async deleteMessage(messageId: number, userId: string): Promise<void> {
-    const message = await this.messageRepository.findOne({ where: { id: messageId } });
-    if (!message) {
-      throw new WsException('Not found');
-    }
-    if (message.userId !== userId) {
-      throw new WsException('Forbidden');
-    }
-    await this.messageRepository.delete({ id: messageId });
-  }
 
   async getUsersInRoom(roomId: number): Promise<RoomUser[]> {
     return this.roomUserRepository.find({ where: { roomId } });
@@ -81,10 +53,6 @@ export class ChatService {
 
   async getTypingUsersInRoom(roomId: number): Promise<TypingStatus[]> {
     return this.typingStatusRepository.find({ where: { roomId } });
-  }
-
-  async clearRoomMessages(roomId: number): Promise<void> {
-    await this.messageRepository.delete({ roomId });
   }
 
   async clearRoomData(roomId: number): Promise<void> {

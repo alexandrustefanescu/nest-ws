@@ -9,6 +9,7 @@ import { MessageReaction } from './modules/messaging/message-reaction.entity';
 import { ChatGateway } from './gateways/chat.gateway';
 import { ChatService } from './services/chat.service';
 import { RoomService } from './services/room.service';
+import { MessagesService } from './modules/messaging/messages.service';
 import { AppController } from './app.controller';
 import { WsDocsController } from './controllers/ws-docs.controller';
 import { APP_GUARD } from '@nestjs/core';
@@ -30,6 +31,7 @@ import { RoomsController } from './controllers/rooms.controller';
     ChatGateway,
     ChatService,
     RoomService,
+    MessagesService,
     WsThrottlerGuard,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
