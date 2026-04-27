@@ -39,6 +39,18 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
 
   const fastify = app.getHttpAdapter().getInstance();
+
+  // Relax CSP only for the /docs route — Scalar requires unsafe-inline to bootstrap.
+  // All other routes keep helmet's strict default policy.
+  fastify.addHook('onSend', async (request, reply) => {
+    if (request.url.startsWith('/docs')) {
+      reply.header(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; worker-src blob:;",
+      );
+    }
+  });
+
   await fastify.register(ScalarApiReference, {
     routePrefix: '/docs',
     configuration: {
