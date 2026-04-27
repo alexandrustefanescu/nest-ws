@@ -14,10 +14,8 @@ export class PresenceService {
   }
 
   async addUserToRoom(roomId: number, userId: string): Promise<RoomUser> {
-    const existing = await this.roomUsers.findOne({ where: { roomId, userId } });
-    if (existing) return existing;
-    const roomUser = this.roomUsers.create({ roomId, userId });
-    return this.roomUsers.save(roomUser);
+    await this.roomUsers.upsert({ roomId, userId }, ['roomId', 'userId']);
+    return this.roomUsers.findOneOrFail({ where: { roomId, userId } });
   }
 
   async removeUserFromRoom(roomId: number, userId: string): Promise<void> {

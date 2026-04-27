@@ -14,7 +14,10 @@ export interface UserJoinedEvent {
 
 export type UserLeftEvent = UserJoinedEvent;
 
-export type UsersListEvent = RoomUser[];
+export interface UsersListEvent {
+  roomId: number;
+  users: RoomUser[];
+}
 
 export interface TypingRequest {
   roomId: number;

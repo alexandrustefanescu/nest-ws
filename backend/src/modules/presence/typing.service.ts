@@ -19,10 +19,6 @@ export class TypingService {
     await this.typingStatuses.delete({ roomId, userId });
   }
 
-  async getTypingUsersInRoom(roomId: number): Promise<TypingStatus[]> {
-    return this.typingStatuses.find({ where: { roomId } });
-  }
-
   async clearRoomTyping(roomId: number): Promise<void> {
     await this.typingStatuses.delete({ roomId });
   }

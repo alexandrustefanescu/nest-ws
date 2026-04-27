@@ -3,7 +3,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import type { ToggleReactionRequest } from '@repo/shared-types';
 
 export const ALLOWED_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥'] as const;
-export type AllowedReaction = (typeof ALLOWED_REACTIONS)[number];
 
 export class ToggleReactionDto implements ToggleReactionRequest {
   @ApiProperty({ example: 1 })

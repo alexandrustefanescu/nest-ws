@@ -3,10 +3,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  OnDestroy,
-  OnInit,
   ViewChild,
   computed,
+  effect,
   inject,
   input,
 } from '@angular/core';
@@ -23,7 +22,7 @@ import { MessageComposer } from './message-composer';
 import { ClearChatDialog } from './clear-chat-dialog';
 import type { Message } from '@repo/shared-types';
 
-export interface GroupedMessage {
+interface GroupedMessage {
   msg: Message;
   firstInGroup: boolean;
   lastInGroup: boolean;
@@ -40,7 +39,7 @@ export interface GroupedMessage {
   templateUrl: './room.html',
   styleUrl: './room.css',
 })
-export class Room implements OnInit, OnDestroy, AfterViewChecked {
+export class Room implements AfterViewChecked {
   readonly id = input.required<string>();
 
   readonly chat = inject(ChatSocket);
@@ -72,12 +71,12 @@ export class Room implements OnInit, OnDestroy, AfterViewChecked {
   readonly hasMore = computed(() => this.chat.roomHasMore()[this.roomId()] ?? false);
   readonly isLoadingMore = this.chat.isLoadingMore;
 
-  ngOnInit(): void {
-    this.chat.joinRoom(this.roomId());
-  }
-
-  ngOnDestroy(): void {
-    this.chat.leaveRoom(this.roomId());
+  constructor() {
+    effect((onCleanup) => {
+      const id = this.roomId();
+      this.chat.joinRoom(id);
+      onCleanup(() => this.chat.leaveRoom(id));
+    });
   }
 
   ngAfterViewChecked(): void {

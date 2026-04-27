@@ -109,7 +109,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     }
 
     const users = await this.presenceService.getUsersInRoom(roomId);
-    this.server.to(`room-${roomId}`).emit('users:list', users);
+    this.server.to(`room-${roomId}`).emit('users:list', { roomId, users });
 
     const snapshot = await this.reactionsService.getReactionsForRoom(roomId);
     client.emit('reactions:snapshot', snapshot);
@@ -285,6 +285,6 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     });
 
     const users = await this.presenceService.getUsersInRoom(roomId);
-    this.server.to(`room-${roomId}`).emit('users:list', users);
+    this.server.to(`room-${roomId}`).emit('users:list', { roomId, users });
   }
 }

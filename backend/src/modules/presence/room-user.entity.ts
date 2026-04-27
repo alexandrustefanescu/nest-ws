@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Room } from '../rooms/room.entity';
 
 @Entity('room_users')
+@Unique(['roomId', 'userId'])
 export class RoomUser {
   @ApiProperty({ example: 1 })
   @PrimaryGeneratedColumn()

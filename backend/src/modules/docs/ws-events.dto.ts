@@ -41,7 +41,10 @@ export class RoomUserDto {
 }
 
 export class UsersListEventDto {
-  @ApiProperty({ type: [RoomUserDto], description: 'Emitted as: users:list — broadcast to the room' })
+  @ApiProperty({ example: 1, description: 'Emitted as: users:list — broadcast to the room' })
+  roomId: number;
+
+  @ApiProperty({ type: [RoomUserDto] })
   users: RoomUserDto[];
 }
 
@@ -78,28 +81,4 @@ export class UserLeftEventDto {
 export class WsInfoResponseDto {
   @ApiProperty({ example: 'WebSocket event documentation. Connect via Socket.IO at ws://localhost:3000' })
   message: string;
-}
-
-export class MessagesHistoryEventDto {
-  @ApiProperty({ example: 1, description: 'Emitted as: messages:history — sent to joining socket only' })
-  roomId: number;
-
-  @ApiProperty({ type: [MessageNewEventDto] })
-  messages: MessageNewEventDto[];
-
-  @ApiProperty({ example: true })
-  hasMore: boolean;
-}
-
-export class MessageDeletedEventDto {
-  @ApiProperty({ example: 1, description: 'Emitted as: message:deleted — broadcast to the room' })
-  roomId: number;
-
-  @ApiProperty({ example: 42 })
-  messageId: number;
-}
-
-export class ChatClearedEventDto {
-  @ApiProperty({ example: 1, description: 'Emitted as: chat:cleared — broadcast to the room' })
-  roomId: number;
 }

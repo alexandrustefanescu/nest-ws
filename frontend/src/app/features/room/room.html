@@ -9,7 +9,7 @@
     <a routerLink="/" class="back-link">← Back to rooms</a>
   </div>
 } @else {
-  <header class="room-header">
+  <header class="room-header rounded-md m-2">
     <mat-icon style="color:var(--text-faint);font-size:18px;width:18px;height:18px">chat_bubble_outline</mat-icon>
     <span class="room-name">{{ room()!.name }}</span>
     <button

@@ -48,8 +48,9 @@ export class Shell {
     effect(() => {
       const currentId = this.chat.currentRoomId();
       if (currentId === null) return;
-      const exists = this.chat.rooms().some((r) => r.id === currentId);
-      if (!exists) {
+      const rooms = this.chat.rooms();
+      if (rooms.length === 0) return;
+      if (!rooms.some((r) => r.id === currentId)) {
         this.router.navigate(['/']);
       }
     });

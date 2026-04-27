@@ -18,13 +18,6 @@ export class Identity {
     }
   }
 
-  clear(): void {
-    this._userId.set('');
-    if (this.isBrowser) {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-
   private read(): string {
     if (!this.isBrowser) return '';
     return localStorage.getItem(STORAGE_KEY) ?? '';

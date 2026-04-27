@@ -7,9 +7,8 @@ describe('PresenceService', () => {
   let service: PresenceService;
   let mockRoomUsers: {
     find: jest.Mock;
-    findOne: jest.Mock;
-    create: jest.Mock;
-    save: jest.Mock;
+    findOneOrFail: jest.Mock;
+    upsert: jest.Mock;
     delete: jest.Mock;
     clear: jest.Mock;
   };
@@ -17,9 +16,8 @@ describe('PresenceService', () => {
   beforeEach(async () => {
     mockRoomUsers = {
       find: jest.fn(),
-      findOne: jest.fn(),
-      create: jest.fn(),
-      save: jest.fn(),
+      findOneOrFail: jest.fn(),
+      upsert: jest.fn(),
       delete: jest.fn(),
       clear: jest.fn(),
     };
@@ -42,22 +40,26 @@ describe('PresenceService', () => {
     expect(mockRoomUsers.find).toHaveBeenCalledWith({ where: { roomId: 1 } });
   });
 
-  it('should add user to room', async () => {
+  it('should add user to room via upsert', async () => {
     const roomUser = { id: 1, roomId: 1, userId: 'user1', joinedAt: new Date() };
-    mockRoomUsers.findOne.mockResolvedValue(null);
-    mockRoomUsers.create.mockReturnValue(roomUser);
-    mockRoomUsers.save.mockResolvedValue(roomUser);
+    mockRoomUsers.upsert.mockResolvedValue(undefined);
+    mockRoomUsers.findOneOrFail.mockResolvedValue(roomUser);
 
     expect(await service.addUserToRoom(1, 'user1')).toEqual(roomUser);
-    expect(mockRoomUsers.create).toHaveBeenCalledWith({ roomId: 1, userId: 'user1' });
+    expect(mockRoomUsers.upsert).toHaveBeenCalledWith(
+      { roomId: 1, userId: 'user1' },
+      ['roomId', 'userId'],
+    );
   });
 
-  it('should return existing user without creating duplicate', async () => {
+  it('should not create a duplicate when called twice for the same user', async () => {
     const existing = { id: 1, roomId: 1, userId: 'user1', joinedAt: new Date() };
-    mockRoomUsers.findOne.mockResolvedValue(existing);
+    mockRoomUsers.upsert.mockResolvedValue(undefined);
+    mockRoomUsers.findOneOrFail.mockResolvedValue(existing);
 
     expect(await service.addUserToRoom(1, 'user1')).toEqual(existing);
-    expect(mockRoomUsers.create).not.toHaveBeenCalled();
+    expect(await service.addUserToRoom(1, 'user1')).toEqual(existing);
+    expect(mockRoomUsers.upsert).toHaveBeenCalledTimes(2);
   });
 
   it('should remove user from room', async () => {
