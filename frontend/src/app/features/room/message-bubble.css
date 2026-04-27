@@ -1,4 +1,4 @@
-:host { display: block; }
+:host { display: block; position: relative; }
 
 .author-label {
   font-size: 12px; line-height: 16px; font-weight: 500;
@@ -6,10 +6,10 @@
   margin-bottom: 2px; padding-left: 4px;
 }
 :where(.dark, .dark *) .author-label {
-  color: oklch(72% 0.14 var(--user-hue));
+  color: oklch(98% 0.005 270);
 }
 
-.bubble-row { display: flex; position: relative; z-index: 1; }
+.bubble-row { display: flex; position: relative; z-index: 50; }
 .bubble-row.own { justify-content: flex-end; }
 .bubble-row.other { justify-content: flex-start; }
 
@@ -24,21 +24,23 @@
   border-bottom-right-radius: 4px;
 }
 .bubble.other {
-  background: oklch(88% 0.07 var(--user-hue));
-  color: var(--text-strong);
+  background: oklch(92% 0.02 var(--user-hue));
+  color: oklch(20% 0.01 270);
   border-bottom-left-radius: 4px;
 }
 :where(.dark, .dark *) .bubble.other {
-  background: oklch(28% 0.09 var(--user-hue));
+  background: oklch(22% 0.02 270);
+  color: oklch(92% 0.01 270);
 }
 
-.bubble-text { margin: 0; }
+.bubble-text { margin: 0; color: inherit; }
 
 .timestamp {
   font-size: 11px; line-height: 16px; margin-top: 2px; text-align: right;
 }
 .bubble.own .timestamp { color: oklch(from var(--accent-fg) l c h / 0.55); }
-.bubble.other .timestamp { color: var(--text-faint); }
+.bubble.other .timestamp { color: var(--text-muted); }
+:where(.dark, .dark *) .bubble.other .timestamp { color: oklch(65% 0.012 270); }
 .timestamp.hidden { visibility: hidden; height: 0; margin: 0; overflow: hidden; }
 
 .msg-actions {
@@ -51,7 +53,7 @@
   box-shadow: 0 2px 8px oklch(0% 0 0 / 0.10);
   opacity: 0; pointer-events: none;
   transition: opacity var(--dur-fast) var(--ease-out);
-  z-index: 10;
+  z-index: 60;
 }
 .bubble-row.own .msg-actions { right: 0; }
 .bubble-row.other .msg-actions { left: 0; }
@@ -71,7 +73,7 @@
 :where(.dark, .dark *) .action-btn.danger:hover { background: oklch(22% 0.06 25); color: oklch(70% 0.18 25); }
 
 .reaction-picker {
-  position: absolute; top: calc(100% + 4px); z-index: 100;
+  position: absolute; top: calc(100% + 4px); z-index: 70;
   display: flex; gap: 4px;
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
@@ -79,6 +81,7 @@
   padding: 6px 8px;
   box-shadow: 0 4px 16px oklch(0% 0 0 / 0.12);
   left: 0;
+  pointer-events: auto;
 }
 
 .picker-emoji-btn {
