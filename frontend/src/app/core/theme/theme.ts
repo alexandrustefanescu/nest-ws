@@ -7,7 +7,7 @@ export type ResolvedTheme = 'light' | 'dark';
 const STORAGE_KEY = 'theme-mode';
 
 @Injectable({ providedIn: 'root' })
-export class ThemeService {
+export class Theme {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly document = inject(DOCUMENT);
 

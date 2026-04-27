@@ -13,7 +13,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ChatSocket } from '../../core/chat/chat-socket';
 import { Identity } from '../../core/identity/identity';
-import { ThemeService, ThemeMode } from '../../core/theme/theme.service';
+import { Theme, ThemeMode } from '../../core/theme/theme';
 import { ConnectionBanner } from './connection-banner';
 
 @Component({
@@ -31,7 +31,7 @@ import { ConnectionBanner } from './connection-banner';
 export class Shell {
   readonly chat = inject(ChatSocket);
   readonly identity = inject(Identity);
-  readonly theme = inject(ThemeService);
+  readonly theme = inject(Theme);
 
   protected readonly showNewRoom = signal(false);
   protected newRoomName = '';
