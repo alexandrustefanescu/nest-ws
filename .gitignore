@@ -70,5 +70,8 @@ chat.db
 .agents/
 .claude/
 
+# Git worktrees
+.worktrees/
+
 # Docs / planning artifacts
 docs/

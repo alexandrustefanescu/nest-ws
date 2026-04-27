@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { IdentityService } from '../../chat/identity.service';
+import { IdentityService } from '../../core/identity/identity.service';
 
 @Component({
   selector: 'app-onboarding',

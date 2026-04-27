@@ -1,38 +1,30 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { databaseConfig } from './database.config';
-import { Room } from './entities/room.entity';
-import { RoomUser } from './entities/room-user.entity';
-import { Message } from './entities/message.entity';
-import { TypingStatus } from './entities/typing-status.entity';
-import { MessageReaction } from './entities/message-reaction.entity';
-import { ChatGateway } from './gateways/chat.gateway';
-import { ChatService } from './services/chat.service';
-import { RoomService } from './services/room.service';
-import { AppController } from './app.controller';
-import { WsDocsController } from './controllers/ws-docs.controller';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { WsThrottlerGuard } from './guards/ws-throttler.guard';
-
-import { RoomsController } from './controllers/rooms.controller';
+import { databaseConfig } from './config/database.config';
+import { HealthModule } from './health/health.module';
+import { DocsModule } from './modules/docs/docs.module';
+import { RoomsModule } from './modules/rooms/rooms.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
+import { PresenceModule } from './modules/presence/presence.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(databaseConfig),
-    TypeOrmModule.forFeature([Room, RoomUser, Message, TypingStatus, MessageReaction]),
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60000, limit: 10 }],
       skipIf: (ctx) => ctx.getType() !== 'http',
     }),
+    RoomsModule,
+    MessagingModule,
+    PresenceModule,
+    ChatModule,
+    HealthModule,
+    DocsModule,
   ],
-  controllers: [AppController, WsDocsController, RoomsController],
-  providers: [
-    ChatGateway,
-    ChatService,
-    RoomService,
-    WsThrottlerGuard,
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
-  ],
+  controllers: [],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

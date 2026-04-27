@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import type { Message, ReactionMap } from '../../chat/chat.models';
-import { ChatSocketService } from '../../chat/chat-socket.service';
+import type { Message, ReactionMap } from '@repo/shared-types';
+import { ChatSocketService } from '../../core/chat/chat-socket.service';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 

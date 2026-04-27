@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import { env } from './config/env';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import ScalarApiReference from '@scalar/fastify-api-reference';
@@ -14,13 +15,15 @@ async function bootstrap() {
     { cors: false }
   );
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
+  );
 
   await app.register(helmet);
   await app.register(fastifyCsrf);
 
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
+    origin: env.corsOrigin,
     methods: ['GET', 'POST', 'DELETE'],
     credentials: true,
   });
@@ -44,7 +47,7 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+  await app.listen(env.port, '0.0.0.0');
   console.log(`Application is running on: ${await app.getUrl()}`);
   console.log(`API docs available at: ${await app.getUrl()}/docs`);
 }

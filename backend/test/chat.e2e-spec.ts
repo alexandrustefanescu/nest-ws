@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../src/app.module';
-import { RoomService } from '../src/services/room.service';
+import { RoomsService } from '../src/modules/rooms/rooms.service';
 
 const TEST_PORT = 3099;
 const TIMEOUT = 10000;
@@ -25,7 +25,7 @@ function connected(socket: Socket): Promise<void> {
 
 describe('Chat E2E', () => {
   let app: INestApplication;
-  let roomService: RoomService;
+  let roomService: RoomsService;
   let testRoomId: number;
 
   beforeAll(async () => {
@@ -38,7 +38,7 @@ describe('Chat E2E', () => {
     );
     await app.listen(TEST_PORT, '0.0.0.0');
 
-    roomService = moduleFixture.get<RoomService>(RoomService);
+    roomService = moduleFixture.get<RoomsService>(RoomsService);
     const room = await roomService.createRoom(`e2e-${Date.now()}`);
     testRoomId = room.id;
   }, TIMEOUT);

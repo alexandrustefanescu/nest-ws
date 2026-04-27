@@ -137,35 +137,33 @@ socket.on('message:new', (msg) => console.log(msg));
 ## Project Structure
 
 ```
-src/
-├── entities/           # TypeORM entities
-│   ├── room.entity.ts
-│   ├── room-user.entity.ts
-│   ├── message.entity.ts
-│   └── typing-status.entity.ts
-├── services/           # Business logic
-│   ├── room.service.ts
-│   └── chat.service.ts
-├── gateways/           # WebSocket gateway
-│   └── chat.gateway.ts
-├── pipes/              # Input validation (WsException)
-│   ├── join-room.pipe.ts
-│   ├── send-message.pipe.ts
-│   ├── typing.pipe.ts
-│   └── index.ts
-├── filters/            # Error handling
-│   └── ws-exception.filter.ts
-├── interceptors/       # Cross-cutting concerns
-│   └── logging.interceptor.ts
-├── app.module.ts
-├── app.controller.ts   # GET /health
-├── database.config.ts
+backend/src/
+├── common/          # filters, interceptors, guards
+├── config/          # env, database
+├── health/          # GET /health
+├── modules/
+│   ├── rooms/       # Room CRUD + REST controller + RoomsService
+│   ├── messaging/   # messages + reactions (MessagesService, ReactionsService)
+│   ├── presence/    # room users + typing (PresenceService, TypingService)
+│   ├── chat/        # ChatGateway + ConnectionRegistry
+│   └── docs/        # WS Swagger documentation
+├── app.module.ts    # composition root
 ├── main.ts
 └── seed.ts
-test/
-├── app.e2e-spec.ts
-└── chat.e2e-spec.ts
+
+frontend/src/app/
+├── core/            # singleton infra (chat socket, identity, theme)
+└── features/        # onboarding, shell, room, rooms
+
+packages/shared-types/src/
+├── entities.ts      # wire-format entity shapes
+├── events.ts        # event-name constants
+└── contracts/       # per-domain request/response interfaces
 ```
+
+WS event validation uses class-validator DTOs (one per event) that `implements` the
+shared-types contract interface. The global `WsExceptionFilter` formats all validation
+errors into the existing `{ status, message, timestamp }` envelope.
 
 ## Notes
 
