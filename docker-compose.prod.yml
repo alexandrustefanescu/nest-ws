@@ -1,12 +1,10 @@
 services:
   chat-backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: alexandrustefanescu/chat-backend:latest
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_PATH: /app/data/chat.db
       PORT: 3000
     volumes:
@@ -17,18 +15,18 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+    restart: unless-stopped
 
   chat-frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
+    image: alexandrustefanescu/chat-frontend:latest
     ports:
       - "4200:4200"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: 4200
     depends_on:
       - chat-backend
+    restart: unless-stopped
 
 volumes:
   chat-data:
