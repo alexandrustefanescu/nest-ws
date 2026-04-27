@@ -1,0 +1,45 @@
+<!-- Mobile backdrop overlay -->
+<div
+  class="fixed inset-0 bg-black/50 md:hidden"
+  (click)="closeBackdrop()"
+  aria-hidden="true"
+></div>
+
+<!-- Sidebar panel -->
+<aside class="flex flex-col w-80 h-full bg-surface-1 border-l border-border-subtle md:static md:bg-transparent md:border-l-0">
+  <!-- Header -->
+  <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
+    <h2 class="text-sm font-semibold text-text-strong">Members</h2>
+    <button
+      class="md:hidden p-1 hover:bg-surface-2 rounded"
+      (click)="closeBackdrop()"
+      aria-label="Close members panel"
+    >
+      <span class="text-xl">×</span>
+    </button>
+  </div>
+
+  <!-- Users list -->
+  <div class="flex-1 overflow-y-auto">
+    @for (user of users(); track user.userId) {
+      <div class="flex items-center gap-3 px-4 py-2 hover:bg-surface-2 cursor-default">
+        <!-- Avatar -->
+        <div
+          class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold text-white"
+          [style.background]="'oklch(from hsl(' + (((user.userId.charCodeAt(0) * 33) ^ 5381) % 360) + ', 70%, 50%) l c h)'"
+        >
+          {{ user.userId[0].toUpperCase() }}
+        </div>
+
+        <!-- Name and badge -->
+        <div class="flex-1 min-w-0">
+          <div class="text-sm text-text-strong truncate">{{ user.userId }}</div>
+        </div>
+
+        @if (user.userId === currentUserId()) {
+          <span class="text-xs px-2 py-0.5 rounded bg-accent text-accent-fg font-medium flex-shrink-0">you</span>
+        }
+      </div>
+    }
+  </div>
+</aside>
