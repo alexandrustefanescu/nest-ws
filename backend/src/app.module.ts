@@ -14,7 +14,7 @@ import { ChatModule } from './modules/chat/chat.module';
   imports: [
     TypeOrmModule.forRoot(databaseConfig),
     ThrottlerModule.forRoot({
-      throttlers: [{ ttl: 60000, limit: 10 }],
+      throttlers: [{ ttl: 60000, limit: 50 }],
       skipIf: (ctx) => ctx.getType() !== 'http',
     }),
     RoomsModule,
