@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  signal,
 } from '@angular/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,6 +21,7 @@ import { Identity } from '../../core/identity/identity';
 import { MessageBubble } from './message-bubble';
 import { MessageComposer } from './message-composer';
 import { ClearChatDialog } from './clear-chat-dialog';
+import { UsersSidebar } from './users-sidebar';
 import type { Message } from '@repo/shared-types';
 
 interface GroupedMessage {
@@ -34,7 +36,7 @@ interface GroupedMessage {
   host: { class: 'flex flex-col flex-1 overflow-hidden min-h-0' },
   imports: [
     MatProgressSpinnerModule, MatIconModule, MatButtonModule, MatMenuModule, RouterLink,
-    MessageBubble, MessageComposer,
+    UsersSidebar, MessageBubble, MessageComposer,
   ],
   templateUrl: './room.html',
   styleUrl: './room.css',
@@ -70,6 +72,8 @@ export class Room implements AfterViewChecked {
 
   readonly hasMore = computed(() => this.chat.roomHasMore()[this.roomId()] ?? false);
   readonly isLoadingMore = this.chat.isLoadingMore;
+
+  readonly showUsersSidebar = signal(false);
 
   constructor() {
     effect((onCleanup) => {
@@ -129,6 +133,14 @@ export class Room implements AfterViewChecked {
       .subscribe((confirmed) => {
         if (confirmed) this.chat.clearChat(this.roomId());
       });
+  }
+
+  toggleUsersSidebar(): void {
+    this.showUsersSidebar.update((v) => !v);
+  }
+
+  closeSidebar(): void {
+    this.showUsersSidebar.set(false);
   }
 
   private scrollToBottom(): void {
