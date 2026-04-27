@@ -1,0 +1,25 @@
+<div class="panel">
+  <div class="monogram">C</div>
+  <h1>Welcome to Chat 👋</h1>
+  <p class="subtitle">Pick a display name to get started</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Your name</mat-label>
+      <input matInput formControlName="name" autocomplete="nickname" />
+      <mat-hint>This is how others will see you.</mat-hint>
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <mat-error>Please enter a name</mat-error>
+      }
+    </mat-form-field>
+
+    <button
+      mat-flat-button
+      type="submit"
+      class="submit-btn"
+      [disabled]="form.invalid"
+    >
+      Enter chat ›
+    </button>
+  </form>
+</div>
