@@ -7,29 +7,18 @@ import { TypingStatus } from '../modules/presence/typing-status.entity';
 
 describe('ChatService', () => {
   let service: ChatService;
-  let mockMessageRepository: {
-    create: jest.Mock;
-    save: jest.Mock;
-    delete: jest.Mock;
-    find: jest.Mock;
-    findOne: jest.Mock;
-  };
-  let mockRoomUserRepository: {
-    find: jest.Mock;
-    findOne: jest.Mock;
-    create: jest.Mock;
-    save: jest.Mock;
-    delete: jest.Mock;
-  };
+  let mockMessageRepository: { delete: jest.Mock };
+  let mockRoomUserRepository: { delete: jest.Mock };
   let mockTypingStatusRepository: {
     create: jest.Mock;
     save: jest.Mock;
     delete: jest.Mock;
     find: jest.Mock;
   };
+
   beforeEach(async () => {
-    mockMessageRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn(), findOne: jest.fn() };
-    mockRoomUserRepository = { find: jest.fn(), findOne: jest.fn(), create: jest.fn(), save: jest.fn(), delete: jest.fn() };
+    mockMessageRepository = { delete: jest.fn() };
+    mockRoomUserRepository = { delete: jest.fn() };
     mockTypingStatusRepository = { create: jest.fn(), save: jest.fn(), delete: jest.fn(), find: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -42,39 +31,6 @@ describe('ChatService', () => {
     }).compile();
 
     service = module.get<ChatService>(ChatService);
-  });
-
-  it('should get users in a room', async () => {
-    const mockUsers = [
-      { id: 1, roomId: 1, userId: 'user1', joinedAt: new Date() },
-      { id: 2, roomId: 1, userId: 'user2', joinedAt: new Date() },
-    ];
-    mockRoomUserRepository.find.mockResolvedValue(mockUsers);
-
-    const result = await service.getUsersInRoom(1);
-
-    expect(result).toEqual(mockUsers);
-    expect(mockRoomUserRepository.find).toHaveBeenCalledWith({ where: { roomId: 1 } });
-  });
-
-  it('should add user to room', async () => {
-    const mockRoomUser = { id: 1, roomId: 1, userId: 'user1', joinedAt: new Date() };
-    mockRoomUserRepository.findOne.mockResolvedValue(null);
-    mockRoomUserRepository.create.mockReturnValue(mockRoomUser);
-    mockRoomUserRepository.save.mockResolvedValue(mockRoomUser);
-
-    const result = await service.addUserToRoom(1, 'user1');
-
-    expect(result).toEqual(mockRoomUser);
-    expect(mockRoomUserRepository.create).toHaveBeenCalledWith({ roomId: 1, userId: 'user1' });
-  });
-
-  it('should remove user from room', async () => {
-    mockRoomUserRepository.delete.mockResolvedValue({ affected: 1 });
-
-    await service.removeUserFromRoom(1, 'user1');
-
-    expect(mockRoomUserRepository.delete).toHaveBeenCalledWith({ roomId: 1, userId: 'user1' });
   });
 
   it('should mark user as typing', async () => {
@@ -119,5 +75,4 @@ describe('ChatService', () => {
     expect(mockRoomUserRepository.delete).toHaveBeenCalledWith({ roomId: 1 });
     expect(mockTypingStatusRepository.delete).toHaveBeenCalledWith({ roomId: 1 });
   });
-
 });

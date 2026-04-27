@@ -16,27 +16,6 @@ export class ChatService {
     private readonly typingStatusRepository: Repository<TypingStatus>,
   ) {}
 
-  async getUsersInRoom(roomId: number): Promise<RoomUser[]> {
-    return this.roomUserRepository.find({ where: { roomId } });
-  }
-
-  async addUserToRoom(roomId: number, userId: string): Promise<RoomUser> {
-    const existing = await this.roomUserRepository.findOne({ where: { roomId, userId } });
-    if (existing) {
-      return existing;
-    }
-    const roomUser = this.roomUserRepository.create({ roomId, userId });
-    return this.roomUserRepository.save(roomUser);
-  }
-
-  async removeUserFromRoom(roomId: number, userId: string): Promise<void> {
-    await this.roomUserRepository.delete({ roomId, userId });
-  }
-
-  async clearPresence(): Promise<void> {
-    await this.roomUserRepository.clear();
-  }
-
   async markUserTyping(roomId: number, userId: string): Promise<TypingStatus> {
     const expiresAt = new Date(Date.now() + 5000);
     const typingStatus = this.typingStatusRepository.create({ roomId, userId, expiresAt });

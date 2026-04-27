@@ -14,6 +14,7 @@ import { ChatService } from '../services/chat.service';
 import { RoomService } from '../services/room.service';
 import { MessagesService } from '../modules/messaging/messages.service';
 import { ReactionsService } from '../modules/messaging/reactions.service';
+import { PresenceService } from '../modules/presence/presence.service';
 import { WsThrottlerGuard, WsThrottle } from '../guards/ws-throttler.guard';
 import { WsExceptionFilter } from '../filters/ws-exception.filter';
 import { LoggingInterceptor } from '../interceptors/logging.interceptor';
@@ -52,11 +53,12 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     private readonly roomService: RoomService,
     private readonly messagesService: MessagesService,
     private readonly reactionsService: ReactionsService,
+    private readonly presenceService: PresenceService,
     private readonly wsThrottlerGuard: WsThrottlerGuard,
   ) {}
 
   async onModuleInit() {
-    await this.chatService.clearPresence();
+    await this.presenceService.clearPresence();
   }
 
   async handleConnection(@ConnectedSocket() client: Socket) {
@@ -95,7 +97,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
       throw new WsException('Room not found');
     }
 
-    await this.chatService.addUserToRoom(roomId, userId);
+    await this.presenceService.addUserToRoom(roomId, userId);
     client.join(`room-${roomId}`);
     const userJoinedRoom = this.trackClientRoom(client.id, roomId, userId);
 
@@ -106,7 +108,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
       });
     }
 
-    const users = await this.chatService.getUsersInRoom(roomId);
+    const users = await this.presenceService.getUsersInRoom(roomId);
     this.server.to(`room-${roomId}`).emit('users:list', users);
 
     const snapshot = await this.reactionsService.getReactionsForRoom(roomId);
@@ -309,7 +311,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
       return false;
     }
 
-    await this.chatService.removeUserFromRoom(roomId, userId);
+    await this.presenceService.removeUserFromRoom(roomId, userId);
     return true;
   }
 
@@ -365,7 +367,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
       timestamp: new Date().toISOString(),
     });
 
-    const users = await this.chatService.getUsersInRoom(roomId);
+    const users = await this.presenceService.getUsersInRoom(roomId);
     this.server.to(`room-${roomId}`).emit('users:list', users);
   }
 }
