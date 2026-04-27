@@ -28,9 +28,7 @@ import { DeleteMessageDto } from '../messaging/dto/delete-message.dto';
 import { LoadMoreDto } from '../messaging/dto/load-more.dto';
 import { ClearChatDto } from '../messaging/dto/clear-chat.dto';
 import { Message } from '../messaging/message.entity';
-
-type ClientRooms = Map<number, string>;
-type RoomUserSockets = Map<string, Set<string>>;
+import { ConnectionRegistry } from './connection-registry';
 
 @WebSocketGateway({
   cors: {
@@ -45,8 +43,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @WebSocketServer()
   server: Server;
 
-  private readonly clientRooms = new Map<string, ClientRooms>();
-  private readonly roomUserSockets = new Map<number, RoomUserSockets>();
+  private readonly registry = new ConnectionRegistry();
 
   constructor(
     private readonly roomsService: RoomsService,
@@ -69,17 +66,19 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
 
   async handleDisconnect(@ConnectedSocket() client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
-    const joinedRooms = this.clientRooms.get(client.id);
-    if (!joinedRooms) {
+    const joinedRooms = [...this.registry.roomsForClient(client.id)];
+    if (joinedRooms.length === 0) {
       return;
     }
 
     for (const [roomId, userId] of joinedRooms) {
-      const userLeftRoom = await this.untrackClientRoom(client.id, roomId, userId);
-      if (userLeftRoom) {
+      const userLeft = this.registry.untrack(client.id, roomId, userId);
+      if (userLeft) {
+        await this.presenceService.removeUserFromRoom(roomId, userId);
         await this.emitUserLeft(roomId, userId);
       }
     }
+    this.registry.evict(client.id);
     this.wsThrottlerGuard.evict(client.id);
   }
 
@@ -99,7 +98,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
 
     await this.presenceService.addUserToRoom(roomId, userId);
     client.join(`room-${roomId}`);
-    const userJoinedRoom = this.trackClientRoom(client.id, roomId, userId);
+    const userJoinedRoom = this.registry.track(client.id, roomId, userId);
 
     if (userJoinedRoom) {
       this.server.to(`room-${roomId}`).emit('user:joined', {
@@ -236,8 +235,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     const { roomId, userId } = data;
 
     client.leave(`room-${roomId}`);
-    const userLeftRoom = await this.untrackClientRoom(client.id, roomId, userId);
-    if (userLeftRoom) {
+    const userLeft = this.registry.untrack(client.id, roomId, userId);
+    if (userLeft) {
+      await this.presenceService.removeUserFromRoom(roomId, userId);
       await this.emitUserLeft(roomId, userId);
     }
   }
@@ -275,92 +275,6 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     const { roomId } = data;
     await this.messagesService.clearRoomMessages(roomId);
     this.server.to(`room-${roomId}`).emit('chat:cleared', { roomId });
-  }
-
-  private trackClientRoom(clientId: string, roomId: number, userId: string): boolean {
-    const clientRooms = this.getOrCreateClientRooms(clientId);
-    const previousUserId = clientRooms.get(roomId);
-    if (previousUserId === userId) {
-      return false;
-    }
-    if (previousUserId) {
-      this.removeClientSocketFromRoom(clientId, roomId, previousUserId);
-    }
-
-    clientRooms.set(roomId, userId);
-    const userSockets = this.getOrCreateUserSockets(roomId, userId);
-    const wasOffline = userSockets.size === 0;
-    userSockets.add(clientId);
-
-    return wasOffline;
-  }
-
-  private async untrackClientRoom(
-    clientId: string,
-    roomId: number,
-    userId: string,
-  ): Promise<boolean> {
-    const clientRooms = this.clientRooms.get(clientId);
-    if (clientRooms?.get(roomId) === userId) {
-      clientRooms.delete(roomId);
-      if (clientRooms.size === 0) {
-        this.clientRooms.delete(clientId);
-      }
-    }
-
-    const userStillPresent = this.removeClientSocketFromRoom(clientId, roomId, userId);
-    if (userStillPresent) {
-      return false;
-    }
-
-    await this.presenceService.removeUserFromRoom(roomId, userId);
-    return true;
-  }
-
-  private removeClientSocketFromRoom(clientId: string, roomId: number, userId: string): boolean {
-    const roomUsers = this.roomUserSockets.get(roomId);
-    const userSockets = roomUsers?.get(userId);
-    if (!roomUsers || !userSockets) {
-      return false;
-    }
-
-    userSockets.delete(clientId);
-    if (userSockets.size > 0) {
-      return true;
-    }
-
-    roomUsers.delete(userId);
-    if (roomUsers.size === 0) {
-      this.roomUserSockets.delete(roomId);
-    }
-    return false;
-  }
-
-  private getOrCreateClientRooms(clientId: string): ClientRooms {
-    const existing = this.clientRooms.get(clientId);
-    if (existing) {
-      return existing;
-    }
-
-    const clientRooms = new Map<number, string>();
-    this.clientRooms.set(clientId, clientRooms);
-    return clientRooms;
-  }
-
-  private getOrCreateUserSockets(roomId: number, userId: string): Set<string> {
-    let roomUsers = this.roomUserSockets.get(roomId);
-    if (!roomUsers) {
-      roomUsers = new Map<string, Set<string>>();
-      this.roomUserSockets.set(roomId, roomUsers);
-    }
-
-    let userSockets = roomUsers.get(userId);
-    if (!userSockets) {
-      userSockets = new Set<string>();
-      roomUsers.set(userId, userSockets);
-    }
-
-    return userSockets;
   }
 
   private async emitUserLeft(roomId: number, userId: string): Promise<void> {
