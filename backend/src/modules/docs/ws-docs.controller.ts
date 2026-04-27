@@ -1,8 +1,8 @@
 import { Controller, Get, Post, HttpCode } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JoinRoomDto } from '../modules/presence/dto/join-room.dto';
-import { SendMessageDto } from '../modules/messaging/dto/send-message.dto';
-import { TypingDto } from '../modules/presence/dto/typing.dto';
+import { JoinRoomDto } from '../presence/dto/join-room.dto';
+import { SendMessageDto } from '../messaging/dto/send-message.dto';
+import { TypingDto } from '../presence/dto/typing.dto';
 import {
   RoomsListEventDto,
   UserJoinedEventDto,
@@ -11,7 +11,7 @@ import {
   UserTypingEventDto,
   UserLeftEventDto,
   WsInfoResponseDto,
-} from '../dto/ws-events.dto';
+} from './ws-events.dto';
 
 const WS_NOTE = 'WebSocket event — connect via Socket.IO at ws://localhost:3000';
 
