@@ -5,22 +5,22 @@ export const routes: Routes = [
   {
     path: 'onboarding',
     loadComponent: () =>
-      import('./features/onboarding/onboarding.page').then((m) => m.OnboardingPage),
+      import('./features/onboarding/onboarding').then((m) => m.Onboarding),
   },
   {
     path: '',
     canActivate: [identityGuard],
-    loadComponent: () => import('./features/shell/shell.page').then((m) => m.ShellPage),
+    loadComponent: () => import('./features/shell/shell').then((m) => m.Shell),
     children: [
       {
         path: '',
         pathMatch: 'full',
         loadComponent: () =>
-          import('./features/rooms/empty-room.page').then((m) => m.EmptyRoomPage),
+          import('./features/rooms/empty-room').then((m) => m.EmptyRoom),
       },
       {
         path: 'rooms/:id',
-        loadComponent: () => import('./features/room/room.page').then((m) => m.RoomPage),
+        loadComponent: () => import('./features/room/room').then((m) => m.Room),
       },
     ],
   },
