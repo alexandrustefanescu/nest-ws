@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { identityGuard } from './core/identity/identity.guard';
+import { identityGuard } from './core/identity/auth-guard';
 
 export const routes: Routes = [
   {
