@@ -1,12 +1,11 @@
 services:
   chat-backend:
     image: alexandrustefanescu/chat-backend:latest
-    ports:
-      - "3000:3000"
     environment:
       NODE_ENV: production
       DATABASE_PATH: /app/data/chat.db
       PORT: 3000
+      CORS_ORIGIN: ${FRONTEND_URL:-http://localhost:4200}
     volumes:
       - chat-data:/app/data
     healthcheck:
@@ -16,17 +15,38 @@ services:
       retries: 3
       start_period: 15s
     restart: unless-stopped
+    networks:
+      - coolify
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.chat-backend.rule=Host(`${BACKEND_DOMAIN:-api.chat.coolify.webwedo.eu}`)
+      - traefik.http.routers.chat-backend.entrypoints=https
+      - traefik.http.routers.chat-backend.tls=true
+      - traefik.http.routers.chat-backend.tls.certresolver=letsencrypt
+      - traefik.http.services.chat-backend.loadbalancer.server.port=3000
 
   chat-frontend:
     image: alexandrustefanescu/chat-frontend:latest
-    ports:
-      - "4200:4200"
     environment:
       NODE_ENV: production
       PORT: 4200
+      API_URL: ${BACKEND_URL:-http://localhost:3000}
     depends_on:
       - chat-backend
     restart: unless-stopped
+    networks:
+      - coolify
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.chat-frontend.rule=Host(`${FRONTEND_DOMAIN:-chat.coolify.webwedo.eu}`)
+      - traefik.http.routers.chat-frontend.entrypoints=https
+      - traefik.http.routers.chat-frontend.tls=true
+      - traefik.http.routers.chat-frontend.tls.certresolver=letsencrypt
+      - traefik.http.services.chat-frontend.loadbalancer.server.port=4200
+
+networks:
+  coolify:
+    external: true
 
 volumes:
   chat-data:
