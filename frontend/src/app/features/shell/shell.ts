@@ -1,32 +1,39 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatListModule } from '@angular/material/list';
 import { ChatSocket } from '../../core/chat/chat-socket';
 import { Identity } from '../../core/identity/identity';
 import { Theme, ThemeMode } from '../../core/theme/theme';
 import { ConnectionBanner } from './connection-banner';
+import { ShellUiService } from './shell-ui.service';
 
 @Component({
   selector: 'app-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterOutlet, RouterLink, RouterLinkActive, FormsModule,
-    MatSidenavModule, MatIconModule, MatButtonModule,
+    MatSidenavModule, MatDividerModule, MatIconModule, MatButtonModule,
     MatFormFieldModule, MatInputModule, MatMenuModule, MatTooltipModule,
+    MatToolbarModule, MatListModule,
     ConnectionBanner,
   ],
   templateUrl: './shell.html',
-  styleUrl: './shell.css',
+  host: {
+    class: 'block h-[100dvh]',
+  },
 })
 export class Shell {
   readonly chat = inject(ChatSocket);
@@ -43,6 +50,9 @@ export class Shell {
   );
 
   private readonly router = inject(Router);
+  private readonly shellUi = inject(ShellUiService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly sidenav = viewChild.required<MatSidenav>('sidenav');
 
   constructor() {
     effect(() => {
@@ -54,6 +64,10 @@ export class Shell {
         this.router.navigate(['/']);
       }
     });
+
+    this.shellUi.toggleSidenav$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.sidenav().toggle());
   }
 
   themeIcon(): string {
@@ -96,5 +110,11 @@ export class Shell {
 
   deleteRoom(roomId: number): void {
     this.chat.deleteRoom(roomId);
+  }
+
+  onDeleteRoom(event: MouseEvent, roomId: number): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.deleteRoom(roomId);
   }
 }

@@ -59,7 +59,7 @@
             <button
               mat-icon-button
               matListItemMeta
-              (click)="$event.preventDefault(); $event.stopPropagation(); deleteRoom(room.id)"
+              (click)="onDeleteRoom($event, room.id)"
               [attr.aria-label]="'Delete ' + room.name"
             >
               <mat-icon>delete</mat-icon>
