@@ -75,6 +75,8 @@ chat.db
 .worktrees/
 
 # Docs / planning artifacts
-docs/
+docs/**
+!docs/plans/
+!docs/plans/**
 !backend/src/**/docs/
 !frontend/src/**/docs/
