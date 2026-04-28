@@ -10,7 +10,7 @@
 
       <!-- Top: app brand -->
       <mat-toolbar>
-        <mat-icon>chat</mat-icon>
+        <mat-icon aria-hidden="true">chat</mat-icon>
         <span class="ml-2">Chat Prototype</span>
       </mat-toolbar>
 
@@ -45,7 +45,7 @@
         </div>
       }
 
-      <mat-nav-list class="flex-1 overflow-y-auto" role="navigation" aria-label="Rooms">
+      <mat-nav-list class="flex-1 overflow-y-auto" aria-label="Rooms">
         @for (room of chat.rooms(); track room.id) {
           <a
             mat-list-item
@@ -74,7 +74,7 @@
               <button mat-button (click)="toggleNewRoom()">create one</button>
             </div>
           } @else if (chat.connectionState() !== 'connected') {
-            <div class="p-4 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)">
+            <div class="p-4 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)" aria-live="polite" aria-atomic="true">
               Connecting…
             </div>
           }
