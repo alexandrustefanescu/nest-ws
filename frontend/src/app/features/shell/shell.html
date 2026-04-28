@@ -1,139 +1,129 @@
 <app-connection-banner [state]="chat.connectionState()" />
 
-<div class="app-frame">
-  <header class="app-header">
-    @if (isSmallScreen()) {
-      <button
-        class="ghost-btn"
-        (click)="sidenav.toggle()"
-        aria-label="Toggle rooms list"
-      >
-        <mat-icon style="font-size:18px;width:18px;height:18px">menu</mat-icon>
-      </button>
-    }
-    <div class="header-brand">
-      <div class="monogram" aria-hidden="true">C</div>
-      <span class="app-name">Chat</span>
-    </div>
+<mat-sidenav-container class="h-full">
+  <mat-sidenav
+    #sidenav
+    [mode]="isSmallScreen() ? 'over' : 'side'"
+    [opened]="!isSmallScreen()"
+  >
+    <div class="flex flex-col h-full">
 
-    <button
-      class="ghost-btn"
-      [matMenuTriggerFor]="themeMenu"
-      [attr.aria-label]="'Theme: ' + themeLabel()"
-      [matTooltip]="'Theme: ' + themeLabel()"
-    >
-      <mat-icon style="font-size:18px;width:18px;height:18px">{{ themeIcon() }}</mat-icon>
-    </button>
+      <!-- Top: app brand -->
+      <mat-toolbar>
+        <mat-icon>chat</mat-icon>
+        <span class="ml-2">Chat Prototype</span>
+      </mat-toolbar>
 
-    <mat-menu #themeMenu="matMenu">
-      <button mat-menu-item (click)="setTheme('light')">
-        <mat-icon>light_mode</mat-icon>
-        @if (theme.mode() === 'light') { <mat-icon class="ml-auto">check</mat-icon> }
-      </button>
-      <button mat-menu-item (click)="setTheme('dark')">
-        <mat-icon>dark_mode</mat-icon>
-        @if (theme.mode() === 'dark') { <mat-icon class="ml-auto">check</mat-icon> }
-      </button>
-      <button mat-menu-item (click)="setTheme('system')">
-        <mat-icon>desktop_windows</mat-icon>
-        @if (theme.mode() === 'system') { <mat-icon class="ml-auto">check</mat-icon> }
-      </button>
-    </mat-menu>
+      <!-- Middle: rooms list -->
+      <div class="flex items-center justify-between px-4 py-2">
+        <h2 class="text-sm font-medium m-0">Rooms</h2>
+        <button
+          mat-icon-button
+          (click)="toggleNewRoom()"
+          [attr.aria-label]="showNewRoom() ? 'Cancel new room' : 'New room'"
+        >
+          <mat-icon>{{ showNewRoom() ? 'close' : 'add' }}</mat-icon>
+        </button>
+      </div>
 
-    <div class="user-pill">
-      <span>{{ identity.userId() }}</span>
-      <span class="presence-dot" aria-hidden="true"></span>
-    </div>
-  </header>
-
-  <mat-sidenav-container class="sidenav-container">
-    <mat-sidenav
-    class="m-1 rounded-lg"
-      #sidenav
-      [mode]="isSmallScreen() ? 'over' : 'side'"
-      [opened]="!isSmallScreen()"
-    >
-      <nav class="sidenav-inner" role="navigation" aria-label="Rooms">
-        <div class="rooms-header">
-          <span class="rooms-label">
-            <mat-icon style="font-size:14px;width:14px;height:14px">tag</mat-icon>
-            Rooms
-          </span>
-          <button
-            class="ghost-btn"
-            (click)="toggleNewRoom()"
-            [attr.aria-label]="showNewRoom() ? 'Cancel new room' : 'New room'"
-          >
-            <mat-icon style="font-size:16px;width:16px;height:16px">{{ showNewRoom() ? 'close' : 'add' }}</mat-icon>
+      @if (showNewRoom()) {
+        <div class="px-4 pb-2 flex flex-col gap-2">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Room name</mat-label>
+            <input
+              matInput
+              [(ngModel)]="newRoomName"
+              (keydown.enter)="submitNewRoom()"
+              (keydown.escape)="cancelNewRoom()"
+              placeholder="e.g. general"
+              autocomplete="off"
+            />
+          </mat-form-field>
+          <button mat-flat-button [disabled]="!newRoomName.trim()" (click)="submitNewRoom()">
+            Create room
           </button>
         </div>
+      }
 
-        @if (showNewRoom()) {
-          <div class="new-room-form">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Room name</mat-label>
-              <input
-                matInput
-                [(ngModel)]="newRoomName"
-                (keydown.enter)="submitNewRoom()"
-                (keydown.escape)="cancelNewRoom()"
-                placeholder="e.g. general"
-                autocomplete="off"
-              />
-            </mat-form-field>
+      <mat-nav-list class="flex-1 overflow-y-auto" role="navigation" aria-label="Rooms">
+        @for (room of chat.rooms(); track room.id) {
+          <a
+            mat-list-item
+            [routerLink]="['/rooms', room.id]"
+            routerLinkActive="active-room"
+            [activated]="isActiveRoom(room.id)"
+            [attr.aria-current]="isActiveRoom(room.id) ? 'page' : null"
+          >
+            <mat-icon matListItemIcon>tag</mat-icon>
+            <span matListItemTitle>{{ room.name }}</span>
             <button
-              mat-flat-button
-              class="create-room-btn"
-              [disabled]="!newRoomName.trim()"
-              (click)="submitNewRoom()"
+              mat-icon-button
+              matListItemMeta
+              (click)="$event.preventDefault(); $event.stopPropagation(); deleteRoom(room.id)"
+              [attr.aria-label]="'Delete ' + room.name"
             >
-              Create room ›
+              <mat-icon>delete</mat-icon>
             </button>
-          </div>
+          </a>
         }
 
-        <div class="room-list">
-          @for (room of chat.rooms(); track room.id) {
-            <div class="room-item-wrap">
-              <a
-                class="room-link"
-                [routerLink]="['/rooms', room.id]"
-                routerLinkActive="active"
-                [attr.aria-current]="isActiveRoom(room.id) ? 'page' : null"
-              >
-                <span class="room-hash" aria-hidden="true">#</span>
-                <span class="room-name">{{ room.name }}</span>
-              </a>
-              <button
-                class="delete-btn"
-                (click)="deleteRoom(room.id)"
-                [attr.aria-label]="'Delete ' + room.name"
-              >
-                <mat-icon style="font-size:14px;width:14px;height:14px">delete</mat-icon>
-              </button>
+        @if (chat.rooms().length === 0) {
+          @if (chat.connectionState() === 'connected' && !showNewRoom()) {
+            <div class="p-4 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)">
+              No rooms yet —
+              <button mat-button (click)="toggleNewRoom()">create one</button>
+            </div>
+          } @else if (chat.connectionState() !== 'connected') {
+            <div class="p-4 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)">
+              Connecting…
             </div>
           }
+        }
+      </mat-nav-list>
 
-          @if (chat.rooms().length === 0) {
-            @if (chat.connectionState() === 'connected' && !showNewRoom()) {
-              <div class="empty-rooms">
-                No rooms yet —
-                <button class="accent-link" (click)="toggleNewRoom()">create one</button>
-              </div>
-            } @else if (chat.connectionState() !== 'connected') {
-              <div class="empty-rooms">
-                Connecting…
-              </div>
-            }
-          }
-        </div>
+      <!-- Bottom: user profile -->
+      <mat-divider />
+      <mat-list>
+        <mat-list-item>
+          <span
+            matListItemAvatar
+            class="inline-flex items-center justify-center rounded-full text-sm font-semibold"
+            style="background: var(--mat-sys-primary); color: var(--mat-sys-on-primary)"
+          >
+            {{ identity.userId()[0].toUpperCase() }}
+          </span>
+          <span matListItemTitle>{{ identity.userId() }}</span>
+          <button
+            mat-icon-button
+            matListItemMeta
+            [matMenuTriggerFor]="themeMenu"
+            [attr.aria-label]="'Theme: ' + themeLabel()"
+            [matTooltip]="'Theme: ' + themeLabel()"
+          >
+            <mat-icon>{{ themeIcon() }}</mat-icon>
+          </button>
+        </mat-list-item>
+      </mat-list>
 
-        <div class="sidenav-divider"></div>
-      </nav>
-    </mat-sidenav>
+      <mat-menu #themeMenu="matMenu" yPosition="above">
+        <button mat-menu-item (click)="setTheme('light')">
+          <mat-icon>light_mode</mat-icon>
+          <span>Light</span>
+        </button>
+        <button mat-menu-item (click)="setTheme('dark')">
+          <mat-icon>dark_mode</mat-icon>
+          <span>Dark</span>
+        </button>
+        <button mat-menu-item (click)="setTheme('system')">
+          <mat-icon>desktop_windows</mat-icon>
+          <span>System</span>
+        </button>
+      </mat-menu>
 
-    <mat-sidenav-content class="sidenav-content">
-      <router-outlet />
-    </mat-sidenav-content>
-  </mat-sidenav-container>
-</div>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="flex flex-col overflow-hidden">
+    <router-outlet />
+  </mat-sidenav-content>
+</mat-sidenav-container>
