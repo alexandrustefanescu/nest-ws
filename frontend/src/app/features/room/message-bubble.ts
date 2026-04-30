@@ -1,23 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
 import type { Message, ReactionMap } from '@repo/shared-types';
 import { ChatSocket } from '../../core/chat/chat-socket';
+import { DeleteMessageDialog } from './delete-message-dialog';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
-
-function userHue(id: string): number {
-  let h = 5381;
-  for (let i = 0; i < id.length; i++) h = (h * 33) ^ id.charCodeAt(i);
-  return Math.abs(h) % 360;
-}
 
 @Component({
   selector: 'app-message-bubble',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatIconModule],
+  imports: [MatIconModule, MatButtonModule, MatChipsModule, MatCardModule],
   templateUrl: './message-bubble.html',
-  styleUrl: './message-bubble.css',
   host: {
+    class: 'block relative',
     '[style.margin-top.px]': 'firstInGroup() ? 16 : 4',
   },
 })
@@ -26,18 +25,19 @@ export class MessageBubble {
   readonly currentUserId = input.required<string>();
   readonly firstInGroup = input(true);
   readonly lastInGroup = input(true);
+  readonly showDate = input(false);
+  readonly dateString = input<string>('');
   readonly reactions = input<ReactionMap>({});
   readonly roomId = input.required<number>();
 
   private readonly chat = inject(ChatSocket);
+  private readonly dialog = inject(MatDialog);
 
   readonly reactionEmojis = REACTION_EMOJIS;
   readonly showPicker = signal(false);
 
   readonly isOwn = computed(() => this.message().userId === this.currentUserId());
 
-  private readonly hue = computed(() => userHue(this.message().userId));
-  readonly otherBubbleStyle = computed(() => this.isOwn() ? null : `--user-hue:${this.hue()}`);
   readonly time = computed(() =>
     new Date(this.message().createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
   );
@@ -73,6 +73,11 @@ export class MessageBubble {
   }
 
   deleteMsg(): void {
-    this.chat.deleteMessage(this.roomId(), this.message().id);
+    this.dialog
+      .open(DeleteMessageDialog, { width: '360px', autoFocus: 'first-tabbable' })
+      .afterClosed()
+      .subscribe((confirmed) => {
+        if (confirmed) this.chat.deleteMessage(this.roomId(), this.message().id);
+      });
   }
 }

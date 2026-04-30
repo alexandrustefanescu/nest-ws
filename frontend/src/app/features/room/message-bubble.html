@@ -1,70 +1,107 @@
 @if (firstInGroup()) {
-  @if (isOwn()) {
-    <div class="author-label">You</div>
-  } @else {
-    <div class="author-label" [style]="otherBubbleStyle()">{{ message().userId }}</div>
-  }
+  <div class="text-xs font-medium mb-1 pl-1" style="color: var(--mat-sys-on-surface-variant)">
+    {{ isOwn() ? 'You' : message().userId }}
+  </div>
 }
 
-<div class="bubble-row" [class]="isOwn() ? 'own' : 'other'">
+<div class="group/row flex relative z-50">
   <article
-    class="bubble"
-    [class]="isOwn() ? 'own' : 'other'"
-    [style]="otherBubbleStyle()"
+    class="group/bubble relative max-w-[65ch] px-4 py-2 text-sm"
+    [style.background]="
+      isOwn() ? 'var(--mat-sys-secondary-container)' : 'var(--mat-sys-surface-container)'
+    "
+    [style.color]="isOwn() ? 'var(--mat-sys-on-primary-container)' : 'var(--mat-sys-on-surface)'"
+    style="border-radius: var(--mat-sys-corner-large)"
     [attr.aria-label]="message().userId + ' at ' + time() + ': ' + message().text"
   >
-    <p class="bubble-text">{{ message().text }}</p>
-    <p class="timestamp" [class.hidden]="!lastInGroup()">{{ time() }}</p>
-  </article>
+    <p class="text-sm whitespace-pre-wrap wrap-break-word">{{ message().text }}</p>
+    <p
+      class="text-caption mt-1 text-right"
+      [class.invisible]="!lastInGroup()"
+      [class.h-0]="!lastInGroup()"
+      [class.m-0]="!lastInGroup()"
+      [class.overflow-hidden]="!lastInGroup()"
+      [style.color]="
+        isOwn()
+          ? 'color-mix(in srgb, var(--mat-sys-on-primary-container) 70%, transparent)'
+          : 'var(--mat-sys-on-surface-variant)'
+      "
+    >
+      {{ time() }}
+    </p>
 
-  <div class="msg-actions">
     @if (isOwn()) {
-      <button
-        class="action-btn danger"
-        (click)="deleteMsg()"
-        aria-label="Delete message"
-      ><mat-icon>delete</mat-icon></button>
-    } @else {
-      <button
-        class="action-btn"
-        (click)="togglePicker()"
-        aria-label="Add reaction"
-        [attr.aria-expanded]="showPicker()"
-      ><mat-icon>add_reaction</mat-icon></button>
-
-      @if (showPicker()) {
-        <div
-          class="reaction-picker"
-          role="dialog"
-          aria-label="Pick a reaction"
-        >
-          @for (emoji of reactionEmojis; track emoji) {
-            <button
-              class="picker-emoji-btn"
-              (click)="react(emoji)"
-              [attr.aria-label]="emoji"
-            >{{ emoji }}</button>
-          }
-        </div>
-      }
+      <div
+        class="absolute -bottom-3 -right-3 opacity-0 transition-opacity duration-150 group-hover/bubble:opacity-100 group-focus-within/bubble:opacity-100"
+      >
+        <button mat-icon-button (click)="deleteMsg()" aria-label="Delete message">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
     }
-  </div>
+
+    @if (!isOwn()) {
+      <div
+        class="absolute -top-4 right-0 z-60 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/row:opacity-100 group-hover/row:pointer-events-auto group-focus-within/row:opacity-100 group-focus-within/row:pointer-events-auto"
+      >
+        <button
+          mat-icon-button
+          (click)="togglePicker()"
+          aria-label="Add reaction"
+          [attr.aria-expanded]="showPicker()"
+        >
+          <mat-icon>add_reaction</mat-icon>
+        </button>
+
+        @if (showPicker()) {
+          <mat-card
+            appearance="outlined"
+            class="absolute top-[calc(100%+4px)] left-2/5 translate-x-1/2 z-60"
+            role="dialog"
+            aria-label="Pick a reaction"
+          >
+            <div class="flex gap-1 p-2">
+              @for (emoji of reactionEmojis; track emoji) {
+                <button mat-icon-button (click)="react(emoji)" [attr.aria-label]="emoji">
+                  {{ emoji }}
+                </button>
+              }
+            </div>
+          </mat-card>
+        }
+      </div>
+    }
+  </article>
 </div>
 
 @if (hasReactions()) {
-  <div class="reactions-row" [class.own]="isOwn()">
+  <mat-chip-set class="mt-1">
     @for (entry of reactionEntries(); track entry.emoji) {
-      <button
-        class="reaction-pill"
-        [class.mine]="entry.isMine"
-        [class.others]="!entry.isMine"
+      <mat-chip
+        [highlighted]="entry.isMine"
         (click)="react(entry.emoji)"
-        [attr.aria-label]="entry.emoji + ' ' + entry.count + (entry.count === 1 ? ' reaction' : ' reactions') + (entry.isMine ? ', active' : '')"
+        [attr.aria-label]="
+          entry.emoji +
+          ' ' +
+          entry.count +
+          (entry.count === 1 ? ' reaction' : ' reactions') +
+          (entry.isMine ? ', active' : '')
+        "
         [attr.aria-pressed]="entry.isMine"
       >
-        <span>{{ entry.emoji }}</span>
-        <span>{{ entry.count }}</span>
-      </button>
+        {{ entry.emoji }} {{ entry.count }}
+      </mat-chip>
     }
+  </mat-chip-set>
+}
+
+@if (showDate()) {
+  <div
+    class="flex items-center justify-center gap-4 mt-8 mb-4 text-xs font-medium"
+    style="color: var(--mat-sys-on-surface-variant)"
+  >
+    <span class="flex-1 h-px" style="background: var(--mat-sys-outline-variant)"></span>
+    {{ dateString() }}
+    <span class="flex-1 h-px" style="background: var(--mat-sys-outline-variant)"></span>
   </div>
 }
