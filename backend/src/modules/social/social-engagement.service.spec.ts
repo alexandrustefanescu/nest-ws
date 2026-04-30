@@ -141,6 +141,63 @@ describe('SocialEngagementService', () => {
     expect(mockBookmarks.findOne).not.toHaveBeenCalled();
   });
 
+  it('returns paginated bookmarked posts for a user', async () => {
+    const post = { id: 1, scope: PostScope.Global, userId: 'bob', title: 'Hello', body: 'World', createdAt: new Date() } as SocialPost;
+    const bookmarkRow = { id: 5, postId: 1, userId: 'alice', post };
+    const qb = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([bookmarkRow]),
+    };
+    mockBookmarks.createQueryBuilder.mockReturnValue(qb);
+
+    const result = await service.listBookmarks('alice', undefined, 20);
+
+    expect(result.posts).toEqual([post]);
+    expect(result.hasMore).toBe(false);
+    expect(qb.where).toHaveBeenCalledWith('bm.userId = :userId', { userId: 'alice' });
+    expect(qb.andWhere).not.toHaveBeenCalled();
+  });
+
+  it('applies before cursor when provided', async () => {
+    const qb = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
+    mockBookmarks.createQueryBuilder.mockReturnValue(qb);
+
+    await service.listBookmarks('alice', 10, 20);
+
+    expect(qb.andWhere).toHaveBeenCalledWith('bm.id < :before', { before: 10 });
+  });
+
+  it('signals hasMore when full page returned', async () => {
+    const posts = Array.from({ length: 20 }, (_, i) => ({
+      id: i + 1,
+      post: { id: i + 1, userId: 'bob' } as SocialPost,
+    }));
+    const qb = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue(posts),
+    };
+    mockBookmarks.createQueryBuilder.mockReturnValue(qb);
+
+    const result = await service.listBookmarks('alice', undefined, 20);
+
+    expect(result.hasMore).toBe(true);
+  });
+
   it('aggregates like and comment counts per post', async () => {
     const commentQB = {
       select: jest.fn().mockReturnThis(),

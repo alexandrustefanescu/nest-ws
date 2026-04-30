@@ -74,6 +74,29 @@ export class SocialEngagementService {
     return { bookmarked: true };
   }
 
+  async listBookmarks(
+    userId: string,
+    before?: number,
+    limit = 20,
+  ): Promise<{ posts: SocialPost[]; hasMore: boolean }> {
+    const qb = this.bookmarksRepo
+      .createQueryBuilder('bm')
+      .innerJoinAndSelect('bm.post', 'post')
+      .where('bm.userId = :userId', { userId })
+      .orderBy('bm.id', 'DESC')
+      .take(limit);
+
+    if (before !== undefined) {
+      qb.andWhere('bm.id < :before', { before });
+    }
+
+    const results = await qb.getMany();
+    return {
+      posts: results.map((bm) => bm.post),
+      hasMore: results.length === limit,
+    };
+  }
+
   async getEngagementForPosts(postIds: number[]): Promise<Record<number, SocialPostEngagement>> {
     if (postIds.length === 0) {
       return {};
