@@ -1,10 +1,8 @@
-<h2 mat-dialog-title class="dialog-title">Clear chat?</h2>
-<mat-dialog-content class="dialog-body">
+<h2 mat-dialog-title>Clear chat?</h2>
+<mat-dialog-content>
   All messages will be permanently deleted for everyone. This action cannot be undone.
 </mat-dialog-content>
-<mat-dialog-actions align="end" class="dialog-actions">
+<mat-dialog-actions align="end">
   <button mat-button mat-dialog-close>Cancel</button>
-  <button mat-flat-button class="destructive-btn" [mat-dialog-close]="true" cdkFocusInitial>
-    Clear
-  </button>
+  <button mat-flat-button [mat-dialog-close]="true" cdkFocusInitial>Clear</button>
 </mat-dialog-actions>

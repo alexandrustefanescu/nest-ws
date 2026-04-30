@@ -7,6 +7,5 @@ import { MatDialogModule } from '@angular/material/dialog';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatDialogModule, MatButtonModule],
   templateUrl: './clear-chat-dialog.html',
-  styleUrl: './clear-chat-dialog.css',
 })
 export class ClearChatDialog {}
