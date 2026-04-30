@@ -2,6 +2,10 @@ import { ChangeDetectionStrategy, Component, ElementRef, input, output, signal, 
 import { FormsModule } from '@angular/forms';
 import { TextFieldModule } from '@angular/cdk/text-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule, MatMenuTrigger } from '@angular/material/menu';
 
 const COMMON_EMOJI = [
   '😀','😂','😍','🥰','😎','🤔','😅','😭','🥹','😤',
@@ -13,9 +17,11 @@ const COMMON_EMOJI = [
 @Component({
   selector: 'app-message-composer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TextFieldModule, MatIconModule],
-  styleUrl: './message-composer.css',
+  imports: [FormsModule, TextFieldModule, MatIconModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatMenuModule],
   templateUrl: './message-composer.html',
+  host: {
+    class: 'block',
+  },
 })
 export class MessageComposer {
   readonly disabled = input(false);
@@ -23,19 +29,15 @@ export class MessageComposer {
   readonly typingChanged = output<boolean>();
 
   protected text = signal('');
-  protected showEmojiPanel = signal(false);
   protected commonEmoji = COMMON_EMOJI;
 
   private readonly textareaRef = viewChild<ElementRef<HTMLTextAreaElement>>('textarea');
-
-  toggleEmojiPanel(): void {
-    this.showEmojiPanel.update((v) => !v);
-  }
+  private readonly emojiTrigger = viewChild(MatMenuTrigger);
 
   insertEmoji(emoji: string): void {
     const current = this.text();
     this.text.set(current + emoji);
-    this.showEmojiPanel.set(false);
+    this.emojiTrigger()?.closeMenu();
     this.typingChanged.emit(true);
 
     setTimeout(() => {

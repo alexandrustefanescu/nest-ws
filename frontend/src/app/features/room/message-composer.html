@@ -1,23 +1,31 @@
-@if (showEmojiPanel()) {
-  <div class="emoji-panel" role="dialog" aria-label="Emoji picker">
-    @for (emoji of commonEmoji; track emoji) {
-      <button class="ep-btn" (click)="insertEmoji(emoji)" [attr.aria-label]="emoji">{{ emoji }}</button>
-    }
-  </div>
-}
-
-<div class="composer-wrap rounded-md m-2">
+<div class="flex items-center gap-2 px-6 py-4">
   <button
-    class="emoji-btn"
+    mat-icon-button
     type="button"
-    (click)="toggleEmojiPanel()"
-    [attr.aria-expanded]="showEmojiPanel()"
+    [matMenuTriggerFor]="emojiMenu"
     aria-label="Emoji picker"
-  ><mat-icon class="icon-sm">mood</mat-icon></button>
+    class="flex items-center justify-center"
+  >
+    <mat-icon>mood</mat-icon>
+  </button>
 
-  <div class="composer-field">
+  <mat-menu #emojiMenu="matMenu" panelClass="emoji-menu-panel">
+    <div class="grid grid-cols-10 justify-items-center overflow-hidden px-2" (click)="$event.stopPropagation()">
+      @for (emoji of commonEmoji; track emoji) {
+        <button
+          type="button"
+          class="w-10 h-10 flex items-center justify-center text-xl border-none bg-transparent cursor-pointer rounded-lg p-0 leading-none"
+          (click)="insertEmoji(emoji)"
+          [attr.aria-label]="emoji"
+        >{{ emoji }}</button>
+      }
+    </div>
+  </mat-menu>
+
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-1">
     <textarea
       #textarea
+      matInput
       [ngModel]="text()"
       (ngModelChange)="text.set($event)"
       [disabled]="disabled()"
@@ -29,14 +37,15 @@
       placeholder="Type a message…"
       aria-label="Message"
     ></textarea>
-  </div>
+  </mat-form-field>
 
   <button
-    class="send-btn"
+    mat-icon-button
+    type="button"
     [disabled]="disabled() || !text().trim()"
     (click)="send()"
     aria-label="Send message"
   >
-    <mat-icon class="icon-sm">send</mat-icon>
+    <mat-icon>send</mat-icon>
   </button>
 </div>
