@@ -10,14 +10,10 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { BreakpointObserver } from '@angular/cdk/layout';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs/operators';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
@@ -42,10 +38,13 @@ interface GroupedMessage {
 @Component({
   selector: 'app-room',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'flex flex-col flex-1 overflow-hidden h-full' },
+  host: {
+    class: 'flex flex-col flex-1 overflow-hidden h-full',
+    '(document:keydown.escape)': 'closeUsersSidebar()',
+  },
   imports: [
     MatProgressSpinnerModule, MatIconModule, MatButtonModule, MatMenuModule,
-    MatSidenavModule, MatToolbarModule, MatChipsModule, RouterLink,
+    MatToolbarModule, MatChipsModule, RouterLink,
     UsersSidebar, MessageBubble, MessageComposer,
   ],
   templateUrl: './room.html',
@@ -64,7 +63,9 @@ export class Room implements AfterViewChecked {
   readonly roomId = computed(() => Number(this.id()));
   readonly room = computed(() => this.chat.rooms().find((r) => r.id === this.roomId()));
   readonly messages = computed(() => this.chat.roomMessages()[this.roomId()] ?? []);
+  readonly hasLoadedMessages = computed(() => this.chat.roomMessages()[this.roomId()] !== undefined);
   readonly users = computed(() => this.chat.roomUsers()[this.roomId()] ?? []);
+  readonly hasLoadedUsers = computed(() => this.chat.roomUsers()[this.roomId()] !== undefined);
   readonly typingList = computed(() =>
     [...(this.chat.typingUsers()[this.roomId()] ?? new Set<string>())].filter(
       (u) => u !== this.identity.userId(),
@@ -92,12 +93,7 @@ export class Room implements AfterViewChecked {
   readonly hasMore = computed(() => this.chat.roomHasMore()[this.roomId()] ?? false);
   readonly isLoadingMore = this.chat.isLoadingMore;
 
-  private readonly breakpointObserver = inject(BreakpointObserver);
-  readonly isDesktop = toSignal(
-    this.breakpointObserver.observe('(min-width: 768px)').pipe(map((r) => r.matches)),
-    { initialValue: true },
-  );
-  readonly showUsersSidebar = signal(this.isDesktop());
+  readonly showUsersSidebar = signal(false);
 
   constructor() {
     effect((onCleanup) => {
@@ -161,6 +157,10 @@ export class Room implements AfterViewChecked {
 
   toggleUsersSidebar(): void {
     this.showUsersSidebar.update((v) => !v);
+  }
+
+  closeUsersSidebar(): void {
+    this.showUsersSidebar.set(false);
   }
 
   toggleShellSidenav(): void {

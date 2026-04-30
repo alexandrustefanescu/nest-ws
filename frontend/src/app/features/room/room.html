@@ -1,43 +1,40 @@
-@if (chat.connectionState() === 'connecting' && room() === undefined) {
+@if (room() === undefined && !chat.hasLoadedRooms()) {
   <div class="flex items-center justify-center h-full">
     <mat-spinner diameter="36" />
   </div>
 } @else if (room() === undefined) {
-  <div class="flex flex-col items-center justify-center h-full gap-3">
+  <div class="flex flex-col items-center justify-center h-full gap-6">
     <mat-icon>error_outline</mat-icon>
-    <p class="m-0">Room not found.</p>
+    <p>Room not found.</p>
     <a mat-button routerLink="/">Back to rooms</a>
   </div>
 } @else {
-  <mat-drawer-container class="h-full" autosize>
-    <mat-drawer
-      #membersDrawer
-      position="end"
-      [mode]="isDesktop() ? 'side' : 'over'"
-      [opened]="showUsersSidebar()"
-    >
-      <app-users-sidebar
-        [users]="users()"
-        [currentUserId]="identity.userId()"
-        (closeRequested)="membersDrawer.close()"
-      />
-    </mat-drawer>
-
-    <mat-drawer-content class="flex flex-col overflow-hidden">
+  <div class="flex flex-1 min-h-0 relative">
+    <main class="flex flex-col flex-1 min-w-0 overflow-hidden">
       <mat-toolbar>
-        @if (!isDesktop()) {
-          <button mat-icon-button (click)="toggleShellSidenav()" aria-label="Toggle rooms list">
-            <mat-icon>menu</mat-icon>
-          </button>
-        }
+        <button
+          mat-icon-button
+          class="shell-mobile-only"
+          (click)="toggleShellSidenav()"
+          aria-label="Toggle rooms list"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
         <mat-icon aria-hidden="true">tag</mat-icon>
-        <span class="ml-2 flex-1 truncate">{{ room()!.name }}</span>
+        <span class="flex-1 truncate">{{ room()!.name }}</span>
 
-        <mat-chip-set>
-          <mat-chip disableRipple>{{ users().length }} online</mat-chip>
-        </mat-chip-set>
+        @if (hasLoadedUsers()) {
+          <mat-chip-set>
+            <mat-chip disableRipple>{{ users().length }} online</mat-chip>
+          </mat-chip-set>
+        }
 
-        <button mat-icon-button (click)="toggleUsersSidebar()" aria-label="Toggle members">
+        <button
+          mat-icon-button
+          class="users-mobile-only"
+          (click)="toggleUsersSidebar()"
+          aria-label="Toggle members"
+        >
           <mat-icon>people</mat-icon>
         </button>
 
@@ -55,7 +52,7 @@
       <div
         #messageList
         id="main-messages"
-        class="flex-1 overflow-y-auto p-4 flex flex-col"
+        class="flex-1 min-h-0 overflow-y-auto p-6 flex flex-col"
         role="log"
         aria-live="polite"
         aria-relevant="additions"
@@ -63,13 +60,8 @@
         (scroll)="onScroll($event)"
       >
         @if (isLoadingMore()) {
-          <div class="flex justify-center p-2">
+          <div class="flex justify-center p-4">
             <mat-spinner diameter="20" />
-          </div>
-        }
-        @if (enrichedMessages().length === 0) {
-          <div class="flex-1 flex items-center justify-center text-sm" style="color: var(--mat-sys-on-surface-variant)">
-            No messages yet — say hi!
           </div>
         }
         @for (item of enrichedMessages(); track item.msg.id) {
@@ -87,7 +79,7 @@
       </div>
 
       @if (typingList().length > 0) {
-        <div class="px-4 py-1 min-h-6 flex items-center gap-1.5 shrink-0" aria-live="polite">
+        <div class="px-6 py-2 min-h-8 flex items-center gap-2 shrink-0" aria-live="polite">
           <span class="typing-dot" aria-hidden="true"></span>
           <span class="typing-dot" aria-hidden="true"></span>
           <span class="typing-dot" aria-hidden="true"></span>
@@ -96,7 +88,7 @@
           </span>
         </div>
       } @else {
-        <div class="px-4 py-1 min-h-6 shrink-0" aria-hidden="true"></div>
+        <div class="px-6 py-2 min-h-8 shrink-0" aria-hidden="true"></div>
       }
 
       <app-message-composer
@@ -105,6 +97,25 @@
         (typingChanged)="onTypingChanged($event)"
         class="shrink-0"
       />
-    </mat-drawer-content>
-  </mat-drawer-container>
+    </main>
+
+    <aside
+      class="users-sidebar flex flex-col w-[280px] shrink-0"
+      style="background: var(--mat-sys-surface); border-left: 1px solid var(--mat-sys-outline-variant)"
+      [class.is-open]="showUsersSidebar()"
+    >
+      <app-users-sidebar
+        [users]="users()"
+        [currentUserId]="identity.userId()"
+        (closeRequested)="closeUsersSidebar()"
+      />
+    </aside>
+
+    <div
+      class="users-backdrop"
+      [class.is-visible]="showUsersSidebar()"
+      (click)="closeUsersSidebar()"
+      aria-hidden="true"
+    ></div>
+  </div>
 }
