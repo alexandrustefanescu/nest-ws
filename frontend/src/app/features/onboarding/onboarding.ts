@@ -4,14 +4,17 @@ import { Router } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { Identity } from '../../core/identity/identity';
 
 @Component({
   selector: 'app-onboarding',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule],
-  styleUrl: './onboarding.css',
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatCardModule],
   templateUrl: './onboarding.html',
+  host: {
+    class: 'flex min-h-[100dvh] items-center justify-center p-4',
+  },
 })
 export class Onboarding implements OnInit {
   private readonly identity = inject(Identity);
