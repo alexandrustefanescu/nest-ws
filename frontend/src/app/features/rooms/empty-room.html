@@ -1,5 +1,8 @@
-<div class="empty-state">
-  <mat-icon>chat_bubble_outline</mat-icon>
+<div class="flex flex-col items-center gap-6 text-center">
+  <mat-icon
+    class="text-[32px]! w-8! h-8!"
+    style="color: var(--mat-sys-on-surface-variant)"
+  >chat_bubble_outline</mat-icon>
   <p>Pick a room to start chatting</p>
-  <a routerLink="/" fragment="new-room">or create a new one →</a>
+  <a mat-button routerLink="/" fragment="new-room">Create a new one</a>
 </div>
