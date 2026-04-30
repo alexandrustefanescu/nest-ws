@@ -23,10 +23,4 @@ export class UsersSidebar {
   closeBackdrop(): void {
     this.closeRequested.emit();
   }
-
-  getUserColor(userId: string): string {
-    const hash = userId.charCodeAt(0);
-    const hue = ((hash * 33) ^ 5381) % 360;
-    return `hsl(${hue}, 70%, 50%)`;
-  }
 }

@@ -10,14 +10,15 @@
     <mat-list-item>
       <span
         matListItemAvatar
-        class="inline-flex items-center justify-center text-xs font-semibold text-white"
-        [style.background]="getUserColor(user.userId)"
+        class="inline-flex items-center justify-center text-xs font-semibold"
+        [style.background]="user.userId === currentUserId() ? 'var(--mat-sys-primary)' : 'var(--mat-sys-secondary)'"
+        [style.color]="user.userId === currentUserId() ? 'var(--mat-sys-on-primary)' : 'var(--mat-sys-on-secondary)'"
       >
         {{ user.userId[0].toUpperCase() }}
       </span>
       <span matListItemTitle>{{ user.userId }}</span>
       @if (user.userId === currentUserId()) {
-        <mat-chip matListItemMeta highlighted disableRipple>you</mat-chip>
+        <mat-chip matListItemMeta disableRipple>you</mat-chip>
       }
     </mat-list-item>
   }
