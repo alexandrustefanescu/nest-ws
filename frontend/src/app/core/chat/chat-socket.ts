@@ -1,4 +1,4 @@
-import { Injectable, PLATFORM_ID, inject, signal, computed } from '@angular/core';
+import { Injectable, PLATFORM_ID, TransferState, inject, makeStateKey, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
@@ -10,6 +10,7 @@ export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
 
 const TYPING_DEBOUNCE_MS = 3000;
 const ROOMS_STORAGE_KEY = 'chat_rooms';
+const ROOMS_STATE_KEY = makeStateKey<Room[]>('chat:rooms');
 
 function loadRoomsFromStorage(): Room[] {
   if (typeof window === 'undefined') return [];
@@ -33,14 +34,17 @@ export class ChatSocket {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly http = inject(HttpClient);
   private readonly identity = inject(Identity);
+  private readonly transferState = inject(TransferState);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   private socket: Socket | null = null;
   private typingTimers = new Map<number, ReturnType<typeof setTimeout>>();
   private typingActive = new Set<number>();
 
-  readonly connectionState = signal<ConnectionState>('disconnected');
-  readonly rooms = signal<Room[]>(loadRoomsFromStorage());
+  readonly connectionState = signal<ConnectionState>('connecting');
+  readonly hasConnectedOnce = signal(false);
+  readonly rooms = signal<Room[]>([]);
+  readonly hasLoadedRooms = signal(false);
   readonly currentRoomId = signal<number | null>(null);
   readonly roomUsers = signal<Record<number, RoomUser[]>>({});
   readonly roomMessages = signal<Record<number, Message[]>>({});
@@ -50,9 +54,29 @@ export class ChatSocket {
   readonly isLoadingMore = signal(false);
 
   constructor() {
+    this.hydrateRoomsFromTransferOrStorage();
     if (this.isBrowser) {
-      this.fetchRoomsFromApi();
+      if (!this.hasLoadedRooms()) this.fetchRoomsFromApi();
       this.connect();
+    } else {
+      this.fetchRoomsFromApi();
+    }
+  }
+
+  private hydrateRoomsFromTransferOrStorage(): void {
+    if (this.transferState.hasKey(ROOMS_STATE_KEY)) {
+      const value = this.transferState.get(ROOMS_STATE_KEY, [] as Room[]);
+      this.rooms.set(value);
+      this.hasLoadedRooms.set(true);
+      if (this.isBrowser) {
+        this.transferState.remove(ROOMS_STATE_KEY);
+        saveRoomsToStorage(value);
+      }
+      return;
+    }
+    if (this.isBrowser) {
+      const cached = loadRoomsFromStorage();
+      if (cached.length > 0) this.rooms.set(cached);
     }
   }
 
@@ -60,10 +84,15 @@ export class ChatSocket {
     this.http.get<Room[]>(`${environment.apiUrl}/api/rooms`).subscribe({
       next: (rooms) => {
         this.rooms.set(rooms);
-        saveRoomsToStorage(rooms);
+        if (this.isBrowser) {
+          saveRoomsToStorage(rooms);
+        } else {
+          this.transferState.set(ROOMS_STATE_KEY, rooms);
+        }
+        this.hasLoadedRooms.set(true);
       },
       error: () => {
-        // keep cached rooms on API failure
+        this.hasLoadedRooms.set(true);
       },
     });
   }
@@ -73,6 +102,7 @@ export class ChatSocket {
 
     this.socket.on('connect', () => {
       this.connectionState.set('connected');
+      this.hasConnectedOnce.set(true);
       const current = this.currentRoomId();
       if (current !== null) {
         this.joinRoom(current);
