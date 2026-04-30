@@ -1,17 +1,16 @@
-@if (state() !== 'connected') {
-  <div class="toast-wrap" role="status" aria-live="polite">
-    <div class="toast-pill">
-      <span
-        class="status-dot"
-        [class.connecting]="state() === 'connecting'"
-        [class.disconnected]="state() === 'disconnected'"
-        aria-hidden="true"
-      ></span>
+@if (visible()) {
+  <div
+    class="fixed top-4 left-1/2 -translate-x-1/2 z-1000 pointer-events-none"
+    role="status"
+    aria-live="polite"
+  >
+    <mat-chip [highlighted]="state() === 'disconnected'" disableRipple>
+      <mat-icon matChipAvatar>{{ state() === 'connecting' ? 'wifi' : 'wifi_off' }}</mat-icon>
       @if (state() === 'connecting') {
         Connecting to server…
       } @else {
         Disconnected — trying to reconnect
       }
-    </div>
+    </mat-chip>
   </div>
 }

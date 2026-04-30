@@ -1,22 +1,50 @@
-<app-connection-banner [state]="chat.connectionState()" />
+<div class="flex flex-col h-full">
+  <app-connection-banner
+    [state]="chat.connectionState()"
+    [hasConnectedOnce]="chat.hasConnectedOnce()"
+  />
 
-<mat-sidenav-container class="h-full">
-  <mat-sidenav
-    #sidenav
-    [mode]="isSmallScreen() ? 'over' : 'side'"
-    [opened]="!isSmallScreen()"
+  <mat-toolbar
+    class="py-10!"
+    style="
+      background: var(--mat-sys-surface);
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+    "
   >
-    <div class="flex flex-col h-full">
+    <mat-icon aria-hidden="true">chat</mat-icon>
+    <h1>Chat Prototype</h1>
 
-      <!-- Top: app brand -->
-      <mat-toolbar>
-        <mat-icon aria-hidden="true">chat</mat-icon>
-        <span class="ml-2">Chat Prototype</span>
-      </mat-toolbar>
+    <span class="flex-1"></span>
+    <button
+      mat-button
+      type="button"
+      [matMenuTriggerFor]="userMenu"
+      [attr.aria-label]="'Account menu for ' + (identity.userId() || 'guest')"
+    >
+      <span
+        class="inline-flex items-center justify-center rounded-full text-xs font-semibold w-7 h-7 mr-2"
+        style="background: var(--mat-sys-secondary); color: var(--mat-sys-on-primary)"
+        aria-hidden="true"
+      >
+        {{ identity.userId()[0]?.toUpperCase() ?? '?' }}
+      </span>
 
-      <!-- Middle: rooms list -->
-      <div class="flex items-center justify-between px-4 py-2">
-        <h2 class="text-sm font-medium m-0">Rooms</h2>
+      <span class="truncate max-w-[160px]">{{ identity.userId() || '—' }}</span>
+      <mat-icon>arrow_drop_down</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <div class="flex flex-1 min-h-0 relative">
+    <aside
+      class="shell-sidebar flex flex-col w-[280px] shrink-0"
+      style="
+        background: var(--mat-sys-surface);
+        border-right: 1px solid var(--mat-sys-outline-variant);
+      "
+      [class.is-open]="sidenavOpen()"
+    >
+      <div class="flex items-center justify-between px-4 py-3">
+        <h2>Rooms</h2>
         <button
           mat-icon-button
           (click)="toggleNewRoom()"
@@ -27,7 +55,7 @@
       </div>
 
       @if (showNewRoom()) {
-        <div class="px-4 pb-2 flex flex-col gap-2">
+        <div class="px-6 pb-4 flex flex-col gap-4">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Room name</mat-label>
             <input
@@ -45,85 +73,93 @@
         </div>
       }
 
-      <mat-nav-list class="flex-1 overflow-y-auto" aria-label="Rooms">
+      <mat-nav-list class="flex-1 overflow-y-auto space-y-2 px-6!" aria-label="Rooms">
         @for (room of chat.rooms(); track room.id) {
           <a
             mat-list-item
+            class="group/room"
             [routerLink]="['/rooms', room.id]"
             routerLinkActive="active-room"
             [activated]="isActiveRoom(room.id)"
             [attr.aria-current]="isActiveRoom(room.id) ? 'page' : null"
+            (click)="closeSidenav()"
           >
             <mat-icon matListItemIcon>tag</mat-icon>
             <span matListItemTitle>{{ room.name }}</span>
-            <button
-              mat-icon-button
+            <div
               matListItemMeta
-              (click)="onDeleteRoom($event, room.id)"
-              [attr.aria-label]="'Delete ' + room.name"
+              class="opacity-0 transition-opacity duration-150 group-hover/room:opacity-100 focus-within:opacity-100"
             >
-              <mat-icon>delete</mat-icon>
-            </button>
+              <button
+                mat-icon-button
+                (click)="onDeleteRoom($event, room.id)"
+                [attr.aria-label]="'Delete ' + room.name"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
           </a>
         }
 
         @if (chat.rooms().length === 0) {
           @if (chat.connectionState() === 'connected' && !showNewRoom()) {
-            <div class="p-4 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)">
+            <div class="p-6 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)">
               No rooms yet —
               <button mat-button (click)="toggleNewRoom()">create one</button>
             </div>
           } @else if (chat.connectionState() !== 'connected') {
-            <div class="p-4 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)" aria-live="polite" aria-atomic="true">
+            <div
+              class="p-6 text-sm text-center"
+              style="color: var(--mat-sys-on-surface-variant)"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               Connecting…
             </div>
           }
         }
       </mat-nav-list>
+    </aside>
 
-      <!-- Bottom: user profile -->
-      <mat-divider />
-      <mat-list>
-        <mat-list-item>
-          <span
-            matListItemAvatar
-            class="inline-flex items-center justify-center rounded-full text-sm font-semibold"
-            style="background: var(--mat-sys-primary); color: var(--mat-sys-on-primary)"
-          >
-            {{ identity.userId()[0].toUpperCase() }}
-          </span>
-          <span matListItemTitle>{{ identity.userId() }}</span>
-          <button
-            mat-icon-button
-            matListItemMeta
-            [matMenuTriggerFor]="themeMenu"
-            [attr.aria-label]="'Theme: ' + themeLabel()"
-            [matTooltip]="'Theme: ' + themeLabel()"
-          >
-            <mat-icon>{{ themeIcon() }}</mat-icon>
-          </button>
-        </mat-list-item>
-      </mat-list>
+    <main class="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <router-outlet />
+    </main>
 
-      <mat-menu #themeMenu="matMenu" yPosition="above">
-        <button mat-menu-item (click)="setTheme('light')">
-          <mat-icon>light_mode</mat-icon>
-          <span>Light</span>
-        </button>
-        <button mat-menu-item (click)="setTheme('dark')">
-          <mat-icon>dark_mode</mat-icon>
-          <span>Dark</span>
-        </button>
-        <button mat-menu-item (click)="setTheme('system')">
-          <mat-icon>desktop_windows</mat-icon>
-          <span>System</span>
-        </button>
-      </mat-menu>
+    <div
+      class="shell-backdrop"
+      [class.is-visible]="sidenavOpen()"
+      (click)="closeSidenav()"
+      aria-hidden="true"
+    ></div>
+  </div>
 
-    </div>
-  </mat-sidenav>
+  <mat-menu #userMenu="matMenu" xPosition="before">
+    <button mat-menu-item type="button" (click)="onAbout()">
+      <mat-icon>info</mat-icon>
+      <span>About</span>
+    </button>
+    <mat-divider />
+    <button mat-menu-item type="button" (click)="setTheme('light')">
+      <mat-icon>light_mode</mat-icon>
+      <span>Light</span>
+    </button>
+    <button mat-menu-item type="button" (click)="setTheme('dark')">
+      <mat-icon>dark_mode</mat-icon>
+      <span>Dark</span>
+    </button>
+    <button mat-menu-item type="button" (click)="setTheme('system')">
+      <mat-icon>desktop_windows</mat-icon>
+      <span>System</span>
+    </button>
+  </mat-menu>
 
-  <mat-sidenav-content class="flex flex-col overflow-hidden">
-    <router-outlet />
-  </mat-sidenav-content>
-</mat-sidenav-container>
+  <ng-template #aboutDialog>
+    <h2 mat-dialog-title>Chat Prototype</h2>
+    <mat-dialog-content>
+      <p>A real-time chat prototype built with Angular and NestJS.</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button type="button" mat-dialog-close>Close</button>
+    </mat-dialog-actions>
+  </ng-template>
+</div>
