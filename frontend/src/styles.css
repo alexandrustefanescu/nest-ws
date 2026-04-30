@@ -2,65 +2,125 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+  ─── Spacing system ────────────────────────────────────────────────────────────
+  6 canonical stops, 4px base, generous bias.
+  Use ONLY these stops for padding / margin / gap.
+
+    1  →  4px   hairline   (icon↔text, dot adjacency)
+    2  →  8px   tight      (chip groups, toolbar inline)
+    4  → 16px   compact    (header rows, mobile padding)
+    6  → 24px   default    (content padding, section gaps — BREATHE)
+    8  → 32px   comfortable(between major regions)
+    12 → 48px   page       (top-level generous)
+
+  Templates: Tailwind utilities p-1 p-2 p-4 p-6 p-8 p-12 (and gap/m variants).
+  Raw CSS / inline styles: var(--space-*) tokens.
+
+  ─── Typography system ─────────────────────────────────────────────────────────
+  Font: Inter 400 / 500 / 600 / 700.
+
+  Type scale (registered Tailwind utilities):
+    text-caption → 11px   timestamps, micro-labels
+    text-xs      → 12px   badges, secondary metadata
+    text-sm      → 14px   secondary body, chat messages
+    text-base    → 15px   primary body copy
+    text-lg      → 17px   lead paragraphs, room names
+    text-xl      → 20px   h4-level UI headings
+    text-2xl     → 24px   h3
+    text-3xl     → 32px   h2 display
+    text-4xl     → 40px   h1 display
+
+  Font weight utilities (semantic aliases):
+    font-ui      → 500    nav items, UI labels
+    font-heading → 600    h4–h6, sidebar headings
+    font-display → 700    h1–h3, hero text
+
+  Paragraph variants (class-based):
+    .lead   → text-lg / lh 1.65   section intro text
+    .small  → text-sm / lh 1.5    helper text, captions
+*/
+/*
+  Color aliases: inline keeps them as var() references at runtime.
+*/
 @theme inline {
-  --color-surface-0: var(--surface-0);
-  --color-surface-1: var(--surface-1);
-  --color-surface-1b: var(--surface-1b);
-  --color-surface-2: var(--surface-2);
+  --color-surface-0:     var(--surface-0);
+  --color-surface-1:     var(--surface-1);
+  --color-surface-1b:    var(--surface-1b);
+  --color-surface-2:     var(--surface-2);
   --color-border-subtle: var(--border-subtle);
   --color-border-strong: var(--border-strong);
-  --color-text-strong: var(--text-strong);
-  --color-text-muted: var(--text-muted);
-  --color-text-faint: var(--text-faint);
-  --color-accent: var(--accent);
-  --color-accent-fg: var(--accent-fg);
-  --color-danger: var(--danger);
-  --color-success: var(--success);
+  --color-text-strong:   var(--text-strong);
+  --color-text-muted:    var(--text-muted);
+  --color-text-faint:    var(--text-faint);
+  --color-accent:        var(--accent);
+  --color-accent-fg:     var(--accent-fg);
+  --color-danger:        var(--danger);
+  --color-success:       var(--success);
+
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --radius-bubble: var(--radius-bubble);
+}
+
+/*
+  Typography + spacing: plain @theme creates real CSS custom properties
+  on :root so var() references in CSS rules resolve correctly.
+*/
+@theme {
+  --font-weight-ui:      500;
+  --font-weight-heading: 600;
+  --font-weight-display: 700;
+
+  --text-caption:                 0.6875rem;
+  --text-caption--line-height:    1.45;
+  --text-caption--letter-spacing: 0.02em;
+
+  --text-xs--line-height:         1.5;
+  --text-xs--letter-spacing:      0.01em;
+
+  --text-sm--line-height:         1.5;
+
+  --text-base:                    0.9375rem;
+  --text-base--line-height:       1.65;
+
+  --text-lg:                      1.0625rem;
+  --text-lg--line-height:         1.65;
+
+  --text-xl--line-height:         1.3;
+  --text-xl--letter-spacing:     -0.01em;
+
+  --text-2xl--line-height:        1.25;
+  --text-2xl--letter-spacing:    -0.015em;
+
+  --text-3xl:                     2rem;
+  --text-3xl--line-height:        1.15;
+  --text-3xl--letter-spacing:    -0.02em;
+
+  --text-4xl:                     2.5rem;
+  --text-4xl--line-height:        1.1;
+  --text-4xl--letter-spacing:    -0.03em;
+
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-4:  1rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-12: 3rem;
 }
 
 :root {
-  --surface-0: oklch(96% 0.003 270);
-  --surface-1: oklch(99% 0 0);
-  --surface-1b: oklch(100% 0 0);
-  --surface-2: oklch(98% 0.003 270);
-  --border-subtle: oklch(94% 0.005 270);
-  --border-strong: oklch(85% 0.008 270);
-  --text-strong: oklch(18% 0.01 270);
-  --text-muted: oklch(48% 0.012 270);
-  --text-faint: oklch(62% 0.01 270);
-  --accent: oklch(55% 0.18 270);
-  --accent-fg: oklch(99% 0 0);
-  --danger: oklch(56% 0.2 25);
+  --surface-0: var(--mat-sys-background);
+  --surface-1: var(--mat-sys-surface);
+  --surface-1b: var(--mat-sys-surface-container);
+  --surface-2: var(--mat-sys-surface-container-high);
+  --border-subtle: var(--mat-sys-outline-variant);
+  --border-strong: var(--mat-sys-outline);
+  --text-strong: var(--mat-sys-on-surface);
+  --text-muted: var(--mat-sys-on-surface-variant);
+  --text-faint: color-mix(in srgb, var(--mat-sys-on-surface-variant) 65%, transparent);
+  --accent: var(--mat-sys-primary);
+  --accent-fg: var(--mat-sys-on-primary);
+  --danger: var(--mat-sys-error);
   --success: oklch(58% 0.15 155);
-
-  --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-2xl: 22px;
-  --radius-bubble: 18px;
-
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --dur-fast: 120ms;
-  --dur-base: 200ms;
-}
-
-html.dark {
-  --surface-0: oklch(8% 0.005 270);
-  --surface-1: oklch(12% 0.005 270);
-  --surface-1b: oklch(15% 0.008 270);
-  --surface-2: oklch(19% 0.01 270);
-  --border-subtle: oklch(22% 0.01 270);
-  --border-strong: oklch(32% 0.012 270);
-  --text-strong: oklch(96% 0.005 270);
-  --text-muted: oklch(65% 0.012 270);
-  --text-faint: oklch(48% 0.012 270);
-  --accent: oklch(68% 0.16 270);
-  --accent-fg: oklch(12% 0.01 270);
-  --danger: oklch(68% 0.18 25);
-  --success: oklch(70% 0.14 155);
 }
 
 html,
@@ -70,35 +130,146 @@ body {
 
 html {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: 'cv11' 1, 'ss01' 1, 'ss03' 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background-color: var(--surface-0);
-  color: var(--text-strong);
-  transition:
-    background-color var(--dur-base) var(--ease-out),
-    color var(--dur-base) var(--ease-out);
+  background-color: var(--mat-sys-background);
+  color: var(--mat-sys-on-surface);
 }
 
-/* Focus visible ring */
-*:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.emoji-menu-panel.mat-mdc-menu-panel {
+  width: min(90vw, 420px);
+  max-width: 420px;
+  max-height: 320px;
+  overflow: auto;
 }
 
-/* Skip link */
+/* ── Global element typography ─────────────────────────────────────────────── */
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: inherit;
+}
+
+h1 {
+  font-size: var(--text-3xl);
+  line-height: var(--text-3xl--line-height);
+  letter-spacing: var(--text-3xl--letter-spacing);
+  font-weight: 700;
+}
+
+h2 {
+  font-size: var(--text-2xl);
+  line-height: var(--text-2xl--line-height);
+  letter-spacing: var(--text-2xl--letter-spacing);
+  font-weight: 700;
+}
+
+h3 {
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  letter-spacing: var(--text-xl--letter-spacing);
+  font-weight: 600;
+}
+
+h4 {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  letter-spacing: var(--text-lg--letter-spacing);
+  font-weight: 600;
+}
+
+h5 {
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  font-weight: 600;
+}
+
+h6 {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  letter-spacing: 0.01em;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+}
+
+p.lead {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+}
+
+p.small {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+}
+
+small {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  letter-spacing: var(--text-xs--letter-spacing);
+}
+
+strong {
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+.mat-toolbar {
+  padding-inline: var(--space-6);
+  gap: var(--space-2);
+}
+
+/*
+  Angular Material targets .mat-toolbar h1-h6 at (0,1,1) specificity,
+  overriding our (0,0,1) global element rules. Match that specificity here;
+  our stylesheet loads after Material so same-specificity means we win.
+*/
+.mat-toolbar h1 {
+  font-size: var(--text-3xl);
+  line-height: var(--text-3xl--line-height);
+  letter-spacing: var(--text-3xl--letter-spacing);
+  font-weight: 700;
+}
+.mat-toolbar h2 {
+  font-size: var(--text-2xl);
+  line-height: var(--text-2xl--line-height);
+  letter-spacing: var(--text-2xl--letter-spacing);
+  font-weight: 700;
+}
+.mat-toolbar h3 {
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  letter-spacing: var(--text-xl--letter-spacing);
+  font-weight: 600;
+}
+.mat-toolbar h4 { font-size: var(--text-lg);   line-height: var(--text-lg--line-height);   font-weight: 600; }
+.mat-toolbar h5 { font-size: var(--text-base);  line-height: var(--text-base--line-height);  font-weight: 600; }
+.mat-toolbar h6 { font-size: var(--text-sm);   line-height: var(--text-sm--line-height);   font-weight: 600; }
+
+/* Sidebar nav: h2 in document outline but visually one level smaller. */
+.shell-sidebar h2 {
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  letter-spacing: var(--text-xl--letter-spacing);
+}
+
 .skip-link {
   position: absolute;
   top: -100%;
   left: 0;
   z-index: 9999;
-  padding: 8px 16px;
-  background: var(--accent);
-  color: var(--accent-fg);
-  border-radius: 0 0 var(--radius-sm) 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  border-radius: 0 0 var(--mat-sys-corner-small) 0;
   font-weight: 600;
   text-decoration: none;
 }
@@ -107,7 +278,6 @@ body {
   top: 0;
 }
 
-/* Typing dots animation */
 @keyframes typing-dot {
   0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
   30% { opacity: 1; transform: translateY(-3px); }
@@ -118,24 +288,92 @@ body {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--text-muted);
+  background: var(--mat-sys-on-surface-variant);
   animation: typing-dot 1.4s ease-in-out infinite;
 }
 
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-/* New message animation */
-@keyframes message-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+.shell-backdrop,
+.users-backdrop {
+  display: none;
 }
 
-.message-in {
-  animation: message-in 180ms var(--ease-out) both;
+@media (max-width: 959.98px) {
+  .shell-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 200ms ease;
+    will-change: transform;
+  }
+  .shell-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .shell-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 49;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    cursor: default;
+    transition: opacity 200ms ease;
+  }
+  .shell-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
-/* Reduced motion */
+@media (min-width: 960px) {
+  .shell-mobile-only {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .users-sidebar {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 40;
+    transform: translateX(100%);
+    transition: transform 200ms ease;
+    will-change: transform;
+  }
+  .users-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .users-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    cursor: default;
+    transition: opacity 200ms ease;
+  }
+  .users-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .users-mobile-only {
+    display: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -148,5 +386,12 @@ body {
   .typing-dot {
     animation: none;
     opacity: 0.6;
+  }
+
+  .shell-sidebar,
+  .shell-backdrop,
+  .users-sidebar,
+  .users-backdrop {
+    transition: none;
   }
 }
