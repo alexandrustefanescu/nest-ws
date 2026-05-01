@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { EntityManager } from '@mikro-orm/sqlite';
 import { Test, type TestingModule } from '@nestjs/testing';
 
@@ -19,6 +20,7 @@ describe('SocialEngagementService', () => {
       | 'nativeDelete'
       | 'count'
       | 'createQueryBuilder'
+      | 'transactional'
     >
   >;
   let mockNotifications: { create: jest.Mock };
@@ -34,6 +36,7 @@ describe('SocialEngagementService', () => {
       nativeDelete: jest.fn(),
       count: jest.fn(),
       createQueryBuilder: jest.fn(),
+      transactional: jest.fn().mockImplementation(async (cb) => cb(em)),
     };
     mockNotifications = { create: jest.fn().mockResolvedValue(undefined) };
 
@@ -99,7 +102,7 @@ describe('SocialEngagementService', () => {
       .mockResolvedValueOnce(post) // requirePost for first toggle
       .mockResolvedValueOnce(null) // no existing like → add
       .mockResolvedValueOnce(post) // requirePost for second toggle
-      .mockResolvedValueOnce({ id: 99 } as never); // existing like → remove
+      .mockResolvedValueOnce({ id: 99 }); // existing like → remove
     em.getReference.mockReturnValue(postRef);
     em.create.mockReturnValue({ post: postRef, userId: 'alice' });
     em.persist.mockReturnThis();
@@ -163,7 +166,7 @@ describe('SocialEngagementService', () => {
     const post = { id: 1, scope: PostScope.Global } as SocialPost;
     em.findOne
       .mockResolvedValueOnce(post) // requirePost
-      .mockResolvedValueOnce({ id: 1 } as never); // existing bookmark
+      .mockResolvedValueOnce({ id: 1 }); // existing bookmark
     em.nativeDelete.mockResolvedValue(1);
 
     await expect(service.toggleBookmark(1, 'alice')).resolves.toEqual({
@@ -232,25 +235,21 @@ describe('SocialEngagementService', () => {
   });
 
   it('aggregates like and comment counts per post', async () => {
-    const commentQB = {
-      select: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      groupBy: jest.fn().mockReturnThis(),
-      execute: jest.fn().mockResolvedValue([{ postId: '1', count: '2' }]),
-    };
-    const likeQB = {
-      select: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      groupBy: jest.fn().mockReturnThis(),
-      execute: jest.fn().mockResolvedValue([{ postId: '2', count: '3' }]),
-    };
-    em.createQueryBuilder
-      .mockReturnValueOnce(commentQB as never)
-      .mockReturnValueOnce(likeQB as never);
+    const comments = [
+      { post: { id: 1 }, postId: 1 },
+      { post: { id: 1 }, postId: 1 },
+    ];
+    const likes = [
+      { post: { id: 2 } },
+      { post: { id: 2 } },
+      { post: { id: 2 } },
+    ];
+    em.find.mockResolvedValueOnce(comments).mockResolvedValueOnce(likes);
 
     await expect(service.getEngagementForPosts([1, 2])).resolves.toEqual({
       1: { commentCount: 2, likeCount: 0 },
       2: { commentCount: 0, likeCount: 3 },
     });
+    expect(em.find).toHaveBeenCalledTimes(2);
   });
 });

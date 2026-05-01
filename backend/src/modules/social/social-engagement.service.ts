@@ -56,24 +56,24 @@ export class SocialEngagementService {
     postId: number,
     userId: string,
   ): Promise<{ postId: number; likeCount: number; liked: boolean }> {
-    const post = await this.requirePost(postId);
-    const existing = await this.em.findOne(PostLike, {
-      post: { id: postId },
-      userId,
-    });
-    let liked: boolean;
+    const { liked, post } = await this.em.transactional(async (em) => {
+      const post = await em.findOne(SocialPost, { id: postId });
+      if (!post) throw new BadRequestException('Post not found');
 
-    if (existing) {
-      await this.em.nativeDelete(PostLike, { post: { id: postId }, userId });
-      liked = false;
-    } else {
-      const like = this.em.create(PostLike, {
-        post: this.em.getReference(SocialPost, postId),
+      const existing = await em.findOne(PostLike, { post: { id: postId }, userId });
+      if (existing) {
+        await em.nativeDelete(PostLike, { post: { id: postId }, userId });
+        return { post, liked: false };
+      }
+
+      em.create(PostLike, {
+        post: em.getReference(SocialPost, postId),
         userId,
       });
-      this.em.persist(like);
-      await this.em.flush();
-      liked = true;
+      return { post, liked: true };
+    });
+
+    if (liked) {
       void this.notificationsService.create(
         post.userId,
         userId,
@@ -91,27 +91,22 @@ export class SocialEngagementService {
     postId: number,
     userId: string,
   ): Promise<{ bookmarked: boolean }> {
-    await this.requirePost(postId);
-    const existing = await this.em.findOne(PostBookmark, {
-      post: { id: postId },
-      userId,
-    });
+    return this.em.transactional(async (em) => {
+      const post = await em.findOne(SocialPost, { id: postId });
+      if (!post) throw new BadRequestException('Post not found');
 
-    if (existing) {
-      await this.em.nativeDelete(PostBookmark, {
-        post: { id: postId },
+      const existing = await em.findOne(PostBookmark, { post: { id: postId }, userId });
+      if (existing) {
+        await em.nativeDelete(PostBookmark, { post: { id: postId }, userId });
+        return { bookmarked: false };
+      }
+
+      em.create(PostBookmark, {
+        post: em.getReference(SocialPost, postId),
         userId,
       });
-      return { bookmarked: false };
-    }
-
-    const bookmark = this.em.create(PostBookmark, {
-      post: this.em.getReference(SocialPost, postId),
-      userId,
+      return { bookmarked: true };
     });
-    this.em.persist(bookmark);
-    await this.em.flush();
-    return { bookmarked: true };
   }
 
   async listBookmarks(
