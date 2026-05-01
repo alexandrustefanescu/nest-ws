@@ -1,11 +1,9 @@
-import { DataSourceOptions } from 'typeorm';
-import { join } from 'path';
+import { defineConfig } from '@mikro-orm/sqlite';
 import { env } from './env';
 
-export const databaseConfig: DataSourceOptions = {
-  type: 'sqlite',
-  database: env.databasePath,
-  entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
-  synchronize: true,
-  logging: env.isDevelopment,
-};
+export const mikroOrmConfig = defineConfig({
+  dbName: env.databasePath,
+  entities: ['dist/**/*.entity.js'],
+  entitiesTs: ['src/**/*.entity.ts'],
+  debug: env.isDevelopment,
+});
