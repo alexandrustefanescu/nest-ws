@@ -11,6 +11,7 @@ import { PresenceModule } from './modules/presence/presence.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { SocialModule } from './modules/social/social.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { UserProfilesModule } from './modules/profiles/user-profiles.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     MessagingModule,
     SocialModule,
     NotificationsModule,
+    UserProfilesModule,
     PresenceModule,
     ChatModule,
     HealthModule,

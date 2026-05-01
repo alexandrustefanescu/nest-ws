@@ -13,7 +13,13 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
-    { cors: false }
+    {
+      cors: {
+        origin: env.corsOrigin,
+        methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+        credentials: true,
+      },
+    }
   );
 
   app.useGlobalPipes(
@@ -22,12 +28,6 @@ async function bootstrap() {
 
   await app.register(helmet);
   await app.register(fastifyCsrf);
-
-  app.enableCors({
-    origin: env.corsOrigin,
-    methods: ['GET', 'POST', 'DELETE'],
-    credentials: true,
-  });
 
   const config = new DocumentBuilder()
     .setTitle('nest-ws Chat API')
