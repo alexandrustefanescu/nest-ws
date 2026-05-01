@@ -1,9 +1,9 @@
-import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Identity } from '../identity/identity';
-import { ChatSocket } from '../chat/chat-socket';
 import { environment } from '../../../environments/environment';
+import { ChatSocket } from '../chat/chat-socket';
+import { Identity } from '../identity/identity';
 
 export interface NotificationItem {
   id: number;
@@ -70,6 +70,7 @@ export class NotificationsService {
 
   private async loadUnreadCount(): Promise<void> {
     const userId = this.identity.userId();
+    if (!userId) return;
     const res = await firstValueFrom(
       this.http.get<{ count: number }>(
         `${environment.apiUrl}/api/notifications/unread-count`,

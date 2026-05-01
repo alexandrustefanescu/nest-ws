@@ -1,7 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import type { NotificationType } from '@repo/shared-types';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { SocialPost } from '../social/social-post.entity';
-
-export type NotificationType = 'like' | 'comment';
 
 @Entity('notifications')
 export class Notification {

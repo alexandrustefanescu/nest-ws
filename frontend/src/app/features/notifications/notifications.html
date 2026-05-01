@@ -2,7 +2,7 @@
   <div class="notifications-header">
     <h2 class="notifications-title">Notifications</h2>
     @if (svc.unreadCount() > 0) {
-      <button mat-button color="primary" (click)="onMarkAllRead()">
+      <button type="button" mat-button color="primary" (click)="onMarkAllRead()">
         Mark all as read
       </button>
     }
@@ -23,6 +23,7 @@
       [class.unread]="!n.read"
       (click)="onNotificationClick(n.id, n.postId, n.read)"
       (keydown.enter)="onNotificationClick(n.id, n.postId, n.read)"
+      (keydown.space)="onNotificationClick(n.id, n.postId, n.read); $event.preventDefault()"
       tabindex="0"
       role="button"
     >

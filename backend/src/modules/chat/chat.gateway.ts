@@ -29,6 +29,7 @@ import { LoadMoreDto } from '../messaging/dto/load-more.dto';
 import { ClearChatDto } from '../messaging/dto/clear-chat.dto';
 import { Message } from '../messaging/message.entity';
 import { ConnectionRegistry } from './connection-registry';
+import type { IdentifyDto } from './dto/identify.dto';
 import { env } from '../../config/env';
 
 @WebSocketGateway({
@@ -86,11 +87,9 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   @SubscribeMessage('user:identify')
   handleIdentify(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { userId: string },
+    @MessageBody() data: IdentifyDto,
   ): void {
-    if (data?.userId) {
-      void client.join(`user:${data.userId}`);
-    }
+    void client.join(`user:${data.userId}`);
   }
 
   @WsThrottle(10, 60000)
