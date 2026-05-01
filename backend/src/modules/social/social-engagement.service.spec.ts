@@ -99,9 +99,9 @@ describe('SocialEngagementService', () => {
     } as SocialPost;
     const postRef = { id: 1 };
     em.findOne
-      .mockResolvedValueOnce(post) // requirePost for first toggle
+      .mockResolvedValueOnce(post) // post lookup inside tx (first toggle)
       .mockResolvedValueOnce(null) // no existing like → add
-      .mockResolvedValueOnce(post) // requirePost for second toggle
+      .mockResolvedValueOnce(post) // post lookup inside tx (second toggle)
       .mockResolvedValueOnce({ id: 99 }); // existing like → remove
     em.getReference.mockReturnValue(postRef);
     em.create.mockReturnValue({ post: postRef, userId: 'alice' });
@@ -147,7 +147,7 @@ describe('SocialEngagementService', () => {
     const post = { id: 1, scope: PostScope.Global } as SocialPost;
     const postRef = { id: 1 };
     em.findOne
-      .mockResolvedValueOnce(post) // requirePost
+      .mockResolvedValueOnce(post) // post lookup inside tx
       .mockResolvedValueOnce(null); // no existing bookmark
     em.getReference.mockReturnValue(postRef);
     em.create.mockReturnValue({ post: postRef, userId: 'alice' });
@@ -165,7 +165,7 @@ describe('SocialEngagementService', () => {
   it('removes a bookmark that already exists', async () => {
     const post = { id: 1, scope: PostScope.Global } as SocialPost;
     em.findOne
-      .mockResolvedValueOnce(post) // requirePost
+      .mockResolvedValueOnce(post) // post lookup inside tx
       .mockResolvedValueOnce({ id: 1 }); // existing bookmark
     em.nativeDelete.mockResolvedValue(1);
 
