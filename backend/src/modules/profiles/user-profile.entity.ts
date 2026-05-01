@@ -1,17 +1,17 @@
-import { Entity, PrimaryColumn, Column } from 'typeorm';
+import { Entity, PrimaryKey, Property } from '@mikro-orm/core';
 import { ApiProperty } from '@nestjs/swagger';
 
-@Entity('user_profiles')
+@Entity({ tableName: 'user_profiles' })
 export class UserProfile {
   @ApiProperty({ example: 'alex' })
-  @PrimaryColumn()
-  userId: string;
+  @PrimaryKey()
+  userId!: string;
 
   @ApiProperty({ example: 'Alex S.', nullable: true })
-  @Column({ nullable: true, length: 60 })
-  displayName: string | null;
+  @Property({ nullable: true, length: 60 })
+  displayName: string | null = null;
 
   @ApiProperty({ example: 'Building things.', nullable: true })
-  @Column({ type: 'text', nullable: true })
-  bio: string | null;
+  @Property({ columnType: 'text', nullable: true })
+  bio: string | null = null;
 }
