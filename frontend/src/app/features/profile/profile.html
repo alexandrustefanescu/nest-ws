@@ -5,16 +5,16 @@
     </div>
   } @else {
     <div class="profile-header">
-      @if (!editing()) {
-        <div
-          class="profile-avatar"
-          [style.background]="'hsl(' + userHue() + ', 65%, 55%)'"
-        >{{ userInitial() }}</div>
+      <div
+        class="profile-avatar"
+        [style.background]="'hsl(' + userHue() + ', 65%, 55%)'"
+      >{{ userInitial() }}</div>
 
+      @if (!editing()) {
         <div class="profile-info">
           <h1 class="profile-display-name">{{ displayName() }}</h1>
-          @if (svc.profile()?.userId !== displayName()) {
-            <span class="profile-user-id">{{ userId }}</span>
+          @if (svc.profile()?.displayName) {
+            <span class="profile-user-id">{{ userId() }}</span>
           }
           <p class="profile-bio">{{ svc.profile()?.bio || 'No bio yet.' }}</p>
         </div>
@@ -26,20 +26,26 @@
           </button>
         }
       } @else {
-        <div
-          class="profile-avatar"
-          [style.background]="'hsl(' + userHue() + ', 65%, 55%)'"
-        >{{ userInitial() }}</div>
-
         <div class="profile-edit-form">
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Display name</mat-label>
-            <input matInput [(ngModel)]="editDisplayName" maxlength="60" />
+            <input
+              matInput
+              [ngModel]="editDisplayName()"
+              (ngModelChange)="editDisplayName.set($event)"
+              maxlength="60"
+            />
           </mat-form-field>
 
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Bio</mat-label>
-            <textarea matInput [(ngModel)]="editBio" rows="3" maxlength="300"></textarea>
+            <textarea
+              matInput
+              [ngModel]="editBio()"
+              (ngModelChange)="editBio.set($event)"
+              rows="3"
+              maxlength="300"
+            ></textarea>
           </mat-form-field>
 
           <div class="edit-actions">

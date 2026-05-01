@@ -7,7 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,7 +23,7 @@ import { PostCard } from '../home/post-card';
   selector: 'app-profile',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, RouterLink,
+    FormsModule,
     MatButtonModule, MatIconModule, MatInputModule, MatFormFieldModule,
     MatProgressSpinnerModule, MatTabsModule,
     PostCard,
@@ -36,23 +36,41 @@ export class Profile implements OnInit, OnDestroy {
   protected readonly identity = inject(Identity);
   private readonly route = inject(ActivatedRoute);
 
-  protected userId = '';
-  protected readonly isOwn = computed(() => this.userId === this.identity.userId());
+  protected readonly userId = signal('');
+  protected readonly isOwn = computed(() => this.userId() === this.identity.userId());
+  protected readonly displayName = computed(
+    () => this.svc.profile()?.displayName || this.userId(),
+  );
+  protected readonly userInitial = computed(
+    () => this.userId()[0]?.toUpperCase() ?? '?',
+  );
+  protected readonly userHue = computed(() => {
+    const id = this.userId();
+    let h = 5381;
+    for (let i = 0; i < id.length; i++) h = (h * 33) ^ id.charCodeAt(i);
+    return Math.abs(h) % 360;
+  });
+
   protected readonly editing = signal(false);
-  protected editDisplayName = '';
-  protected editBio = '';
+  protected readonly editDisplayName = signal('');
+  protected readonly editBio = signal('');
 
   protected readonly postsLoaded = signal(false);
   protected readonly repliesLoaded = signal(false);
 
   async ngOnInit(): Promise<void> {
-    this.userId = this.route.snapshot.paramMap.get('userId') ?? '';
+    this.userId.set(this.route.snapshot.paramMap.get('userId') ?? '');
     this.svc.reset();
-    await Promise.all([
-      this.svc.loadProfile(this.userId),
-      this.svc.loadPosts(this.userId),
-    ]);
-    this.postsLoaded.set(true);
+    this.svc.loading.set(true);
+    try {
+      await Promise.all([
+        this.svc.loadProfile(this.userId()),
+        this.svc.loadPosts(this.userId()),
+      ]);
+    } finally {
+      this.svc.loading.set(false);
+      this.postsLoaded.set(true);
+    }
   }
 
   ngOnDestroy(): void {
@@ -61,8 +79,8 @@ export class Profile implements OnInit, OnDestroy {
 
   protected startEdit(): void {
     const p = this.svc.profile();
-    this.editDisplayName = p?.displayName ?? '';
-    this.editBio = p?.bio ?? '';
+    this.editDisplayName.set(p?.displayName ?? '');
+    this.editBio.set(p?.bio ?? '');
     this.editing.set(true);
   }
 
@@ -71,31 +89,17 @@ export class Profile implements OnInit, OnDestroy {
   }
 
   protected async saveEdit(): Promise<void> {
-    await this.svc.updateProfile(this.userId, {
-      displayName: this.editDisplayName,
-      bio: this.editBio,
+    await this.svc.updateProfile(this.userId(), {
+      displayName: this.editDisplayName(),
+      bio: this.editBio(),
     });
     this.editing.set(false);
   }
 
   protected async onTabChange(event: MatTabChangeEvent): Promise<void> {
     if (event.index === 1 && !this.repliesLoaded()) {
-      await this.svc.loadReplies(this.userId);
+      await this.svc.loadReplies(this.userId());
       this.repliesLoaded.set(true);
     }
-  }
-
-  protected displayName(): string {
-    return this.svc.profile()?.displayName || this.userId;
-  }
-
-  protected userInitial(): string {
-    return this.userId[0]?.toUpperCase() ?? '?';
-  }
-
-  protected userHue(): number {
-    let h = 5381;
-    for (let i = 0; i < this.userId.length; i++) h = (h * 33) ^ this.userId.charCodeAt(i);
-    return Math.abs(h) % 360;
   }
 }
