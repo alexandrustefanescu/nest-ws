@@ -1,46 +1,61 @@
+import { EntityManager } from '@mikro-orm/sqlite';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
+import { Message } from './message.entity';
 import { MessageReaction } from './message-reaction.entity';
 
 @Injectable()
 export class ReactionsService {
-  constructor(
-    @InjectRepository(MessageReaction) private readonly reactions: Repository<MessageReaction>,
-  ) {}
+  constructor(private readonly em: EntityManager) {}
 
   async toggleReaction(
     messageId: number,
     userId: string,
     emoji: string,
   ): Promise<Record<string, string[]>> {
-    const existing = await this.reactions.findOne({ where: { messageId, userId, emoji } });
+    const message = this.em.getReference(Message, messageId);
+    const existing = await this.em.findOne(MessageReaction, {
+      message,
+      userId,
+      emoji,
+    });
     if (existing) {
-      await this.reactions.delete({ messageId, userId, emoji });
+      await this.em.nativeDelete(MessageReaction, { message, userId, emoji });
     } else {
-      const reaction = this.reactions.create({ messageId, userId, emoji });
-      await this.reactions.save(reaction);
+      const reaction = this.em.create(MessageReaction, {
+        message,
+        userId,
+        emoji,
+      });
+      this.em.persist(reaction);
+      await this.em.flush();
     }
-    return this.aggregateReactions(await this.reactions.find({ where: { messageId } }));
+    const reactions = await this.em.find(MessageReaction, { message });
+    return this.aggregateReactions(reactions);
   }
 
-  async getReactionsForRoom(roomId: number): Promise<Record<number, Record<string, string[]>>> {
-    const rows = await this.reactions
-      .createQueryBuilder('r')
-      .innerJoin('r.message', 'm')
-      .where('m.roomId = :roomId', { roomId })
-      .getMany();
+  async getReactionsForRoom(
+    roomId: number,
+  ): Promise<Record<number, Record<string, string[]>>> {
+    const rows = await this.em.find(
+      MessageReaction,
+      { message: { room: { id: roomId } } },
+      { populate: ['message'] },
+    );
 
     const result: Record<number, Record<string, string[]>> = {};
     for (const r of rows) {
-      if (!result[r.messageId]) result[r.messageId] = {};
-      if (!result[r.messageId][r.emoji]) result[r.messageId][r.emoji] = [];
-      result[r.messageId][r.emoji].push(r.userId);
+      const msgId = r.message.id;
+      if (!result[msgId]) result[msgId] = {};
+      if (!result[msgId][r.emoji]) result[msgId][r.emoji] = [];
+      result[msgId][r.emoji].push(r.userId);
     }
     return result;
   }
 
-  private aggregateReactions(rows: MessageReaction[]): Record<string, string[]> {
+  private aggregateReactions(
+    rows: MessageReaction[],
+  ): Record<string, string[]> {
     const result: Record<string, string[]> = {};
     for (const r of rows) {
       if (!result[r.emoji]) result[r.emoji] = [];

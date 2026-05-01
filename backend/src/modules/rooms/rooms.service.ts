@@ -1,29 +1,28 @@
+import { EntityManager } from '@mikro-orm/sqlite';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import { Room } from './room.entity';
 
 @Injectable()
 export class RoomsService {
-  constructor(
-    @InjectRepository(Room)
-    private readonly rooms: Repository<Room>,
-  ) {}
+  constructor(private readonly em: EntityManager) {}
 
   async getAllRooms(): Promise<Room[]> {
-    return this.rooms.find();
+    return this.em.find(Room, {});
   }
 
   async getRoomById(id: number): Promise<Room | null> {
-    return this.rooms.findOne({ where: { id } });
+    return this.em.findOne(Room, { id });
   }
 
   async createRoom(name: string): Promise<Room> {
-    const room = this.rooms.create({ name });
-    return this.rooms.save(room);
+    const room = this.em.create(Room, { name });
+    this.em.persist(room);
+    await this.em.flush();
+    return room;
   }
 
   async deleteRoom(id: number): Promise<void> {
-    await this.rooms.delete({ id });
+    await this.em.nativeDelete(Room, { id });
   }
 }

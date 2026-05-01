@@ -88,6 +88,10 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^@mikro-orm/sqlite$": "<rootDir>/../test/mocks/mikro-orm-sqlite.mock.ts",
+      "^@mikro-orm/core$": "<rootDir>/../test/mocks/mikro-orm-sqlite.mock.ts"
+    },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

@@ -1,16 +1,17 @@
+import { EntityManager } from '@mikro-orm/sqlite';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
-import { Notification, NotificationType } from './notification.entity';
+import type { NotificationType } from '@repo/shared-types';
+
+import { SocialPost } from '../social/social-post.entity';
 import { NotificationsGateway } from './notifications.gateway';
+import { Notification } from './notification.entity';
 
 const DEFAULT_LIMIT = 20;
 
 @Injectable()
 export class NotificationsService {
   constructor(
-    @InjectRepository(Notification)
-    private readonly repo: Repository<Notification>,
+    private readonly em: EntityManager,
     private readonly gateway: NotificationsGateway,
   ) {}
 
@@ -23,41 +24,60 @@ export class NotificationsService {
   ): Promise<void> {
     if (recipientId === actorId) return;
 
-    const notification = this.repo.create({ recipientId, actorId, type, postId });
-    const saved = await this.repo.save(notification);
+    const post = this.em.getReference(SocialPost, postId);
+    const notification = this.em.create(Notification, {
+      recipientId,
+      actorId,
+      type,
+      post,
+    });
+    this.em.persist(notification);
+    await this.em.flush();
 
     this.gateway.server.to(`user:${recipientId}`).emit('notification:new', {
-      id: saved.id,
+      id: notification.id,
       type,
       actorId,
       postId,
       postTitle,
-      createdAt: saved.createdAt,
+      createdAt: notification.createdAt,
     });
   }
 
-  async listForUser(userId: string, before?: number, limit = DEFAULT_LIMIT): Promise<Notification[]> {
-    const where = before !== undefined
-      ? { recipientId: userId, id: LessThan(before) }
-      : { recipientId: userId };
+  async listForUser(
+    userId: string,
+    before?: number,
+    limit = DEFAULT_LIMIT,
+  ): Promise<Notification[]> {
+    const where =
+      before !== undefined
+        ? { recipientId: userId, id: { $lt: before } }
+        : { recipientId: userId };
 
-    return this.repo.find({
-      where,
-      order: { id: 'DESC' },
-      relations: ['post'],
-      take: limit,
+    return this.em.find(Notification, where, {
+      orderBy: { id: 'DESC' },
+      populate: ['post'],
+      limit,
     });
   }
 
   async markRead(userId: string, id: number): Promise<void> {
-    await this.repo.update({ id, recipientId: userId }, { read: true });
+    await this.em.nativeUpdate(
+      Notification,
+      { id, recipientId: userId },
+      { read: true },
+    );
   }
 
   async markAllRead(userId: string): Promise<void> {
-    await this.repo.update({ recipientId: userId, read: false }, { read: true });
+    await this.em.nativeUpdate(
+      Notification,
+      { recipientId: userId, read: false },
+      { read: true },
+    );
   }
 
   async getUnreadCount(userId: string): Promise<number> {
-    return this.repo.count({ where: { recipientId: userId, read: false } });
+    return this.em.count(Notification, { recipientId: userId, read: false });
   }
 }

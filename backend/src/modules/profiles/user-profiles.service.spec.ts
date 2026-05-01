@@ -1,54 +1,57 @@
+import { EntityManager } from '@mikro-orm/sqlite';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { LessThan } from 'typeorm';
-import { PostComment } from '../social/post-comment.entity';
-import { SocialPost } from '../social/social-post.entity';
-import { UserProfile } from './user-profile.entity';
+
 import { UserProfilesService } from './user-profiles.service';
 
 describe('UserProfilesService', () => {
   let service: UserProfilesService;
-  let mockProfiles: { findOne: jest.Mock; create: jest.Mock; save: jest.Mock };
-  let mockPosts: { find: jest.Mock; createQueryBuilder: jest.Mock };
-  let mockComments: { createQueryBuilder: jest.Mock };
+  let em: jest.Mocked<
+    Pick<EntityManager, 'findOne' | 'find' | 'create' | 'persist' | 'flush'>
+  >;
 
   beforeEach(async () => {
-    mockProfiles = { findOne: jest.fn(), create: jest.fn(), save: jest.fn() };
-    mockPosts = { find: jest.fn(), createQueryBuilder: jest.fn() };
-    mockComments = { createQueryBuilder: jest.fn() };
+    em = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      persist: jest.fn(),
+      flush: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserProfilesService,
-        { provide: getRepositoryToken(UserProfile), useValue: mockProfiles },
-        { provide: getRepositoryToken(SocialPost), useValue: mockPosts },
-        { provide: getRepositoryToken(PostComment), useValue: mockComments },
+        { provide: EntityManager, useValue: em },
       ],
     }).compile();
 
-    service = module.get<UserProfilesService>(UserProfilesService);
+    service = module.get(UserProfilesService);
   });
 
   describe('getOrCreate', () => {
     it('returns existing profile', async () => {
       const profile = { userId: 'alice', displayName: 'Alice', bio: null };
-      mockProfiles.findOne.mockResolvedValue(profile);
+      em.findOne.mockResolvedValue(profile);
 
       const result = await service.getOrCreate('alice');
 
       expect(result).toEqual(profile);
-      expect(mockProfiles.create).not.toHaveBeenCalled();
+      expect(em.create).not.toHaveBeenCalled();
     });
 
     it('creates blank profile when none exists', async () => {
-      mockProfiles.findOne.mockResolvedValue(null);
+      em.findOne.mockResolvedValue(null);
       const blank = { userId: 'bob', displayName: null, bio: null };
-      mockProfiles.create.mockReturnValue(blank);
-      mockProfiles.save.mockResolvedValue(blank);
+      em.create.mockReturnValue(blank);
+      em.persist.mockReturnThis();
 
       const result = await service.getOrCreate('bob');
 
-      expect(mockProfiles.create).toHaveBeenCalledWith({ userId: 'bob', displayName: null, bio: null });
+      expect(em.create).toHaveBeenCalledWith(expect.anything(), {
+        userId: 'bob',
+        displayName: null,
+        bio: null,
+      });
       expect(result).toEqual(blank);
     });
   });
@@ -56,20 +59,17 @@ describe('UserProfilesService', () => {
   describe('update', () => {
     it('updates only provided fields', async () => {
       const existing = { userId: 'alice', displayName: 'Alice', bio: null };
-      const updated = { ...existing, bio: 'Builder.' };
-      mockProfiles.findOne.mockResolvedValue(existing);
-      mockProfiles.save.mockResolvedValue(updated);
+      em.findOne.mockResolvedValue(existing);
 
       const result = await service.update('alice', { bio: 'Builder.' });
 
-      expect(mockProfiles.save).toHaveBeenCalledWith({ ...existing, bio: 'Builder.' });
-      expect(result).toEqual(updated);
+      expect(em.flush).toHaveBeenCalled();
+      expect(result.bio).toBe('Builder.');
     });
 
     it('does not overwrite displayName when only bio is updated', async () => {
       const existing = { userId: 'alice', displayName: 'Alice', bio: null };
-      mockProfiles.findOne.mockResolvedValue(existing);
-      mockProfiles.save.mockImplementation((p) => Promise.resolve(p));
+      em.findOne.mockResolvedValue(existing);
 
       const result = await service.update('alice', { bio: 'Builder.' });
 
@@ -77,10 +77,10 @@ describe('UserProfilesService', () => {
     });
 
     it('auto-creates profile if missing before update', async () => {
-      mockProfiles.findOne.mockResolvedValue(null);
+      em.findOne.mockResolvedValue(null);
       const blank = { userId: 'bob', displayName: null, bio: null };
-      mockProfiles.create.mockReturnValue(blank);
-      mockProfiles.save.mockResolvedValue({ ...blank, displayName: 'Bob' });
+      em.create.mockReturnValue(blank);
+      em.persist.mockReturnThis();
 
       const result = await service.update('bob', { displayName: 'Bob' });
 
@@ -94,15 +94,15 @@ describe('UserProfilesService', () => {
         { id: 2, userId: 'alice', title: 'B' },
         { id: 1, userId: 'alice', title: 'A' },
       ];
-      mockPosts.find.mockResolvedValue(posts);
+      em.find.mockResolvedValue(posts);
 
       const result = await service.getUserPosts('alice');
 
-      expect(mockPosts.find).toHaveBeenCalledWith({
-        where: { userId: 'alice' },
-        order: { id: 'DESC' },
-        take: 20,
-      });
+      expect(em.find).toHaveBeenCalledWith(
+        expect.anything(),
+        { userId: 'alice' },
+        { orderBy: { id: 'DESC' }, limit: 20 },
+      );
       expect(result).toEqual([
         { id: 1, userId: 'alice', title: 'A' },
         { id: 2, userId: 'alice', title: 'B' },
@@ -110,54 +110,53 @@ describe('UserProfilesService', () => {
     });
 
     it('applies before cursor', async () => {
-      mockPosts.find.mockResolvedValue([]);
+      em.find.mockResolvedValue([] as never);
 
       await service.getUserPosts('alice', 5);
 
-      expect(mockPosts.find).toHaveBeenCalledWith({
-        where: { userId: 'alice', id: LessThan(5) },
-        order: { id: 'DESC' },
-        take: 20,
-      });
+      expect(em.find).toHaveBeenCalledWith(
+        expect.anything(),
+        { userId: 'alice', id: { $lt: 5 } },
+        expect.objectContaining({ orderBy: { id: 'DESC' } }),
+      );
     });
   });
 
   describe('getUserReplies', () => {
-    function makeQb(rows: object[]) {
-      const qb: Record<string, jest.Mock> = {};
-      const chain = () => qb as unknown as ReturnType<typeof mockComments.createQueryBuilder>;
-      qb['select'] = jest.fn().mockReturnValue(chain());
-      qb['where'] = jest.fn().mockReturnValue(chain());
-      qb['andWhere'] = jest.fn().mockReturnValue(chain());
-      qb['orderBy'] = jest.fn().mockReturnValue(chain());
-      qb['take'] = jest.fn().mockReturnValue(chain());
-      qb['getMany'] = jest.fn().mockResolvedValue(rows);
-      qb['getQuery'] = jest.fn().mockReturnValue('SELECT DISTINCT c.postId FROM post_comments c WHERE c.userId = :userId');
-      qb['getParameters'] = jest.fn().mockReturnValue({ userId: 'alice' });
-      qb['setParameters'] = jest.fn().mockReturnValue(chain());
-      return qb;
-    }
-
-    it('returns posts commented on by user', async () => {
-      const commentQb = makeQb([]);
-      const postQb = makeQb([{ id: 3, title: 'Discussed' }, { id: 1, title: 'Old' }]);
-      mockComments.createQueryBuilder.mockReturnValue(commentQb);
-      mockPosts.createQueryBuilder.mockReturnValue(postQb);
+    it('returns empty array when user has no comments', async () => {
+      em.find.mockResolvedValue([] as never);
 
       const result = await service.getUserReplies('alice');
 
-      expect(result).toEqual([{ id: 1, title: 'Old' }, { id: 3, title: 'Discussed' }]);
+      expect(result).toEqual([]);
     });
 
-    it('applies before cursor via andWhere', async () => {
-      const commentQb = makeQb([]);
-      const postQb = makeQb([]);
-      mockComments.createQueryBuilder.mockReturnValue(commentQb);
-      mockPosts.createQueryBuilder.mockReturnValue(postQb);
+    it('returns posts commented on by user in oldest-first order', async () => {
+      const comments = [{ post: { id: 3 } }, { post: { id: 1 } }];
+      const posts = [
+        { id: 3, title: 'Discussed' },
+        { id: 1, title: 'Old' },
+      ];
+      em.find.mockResolvedValueOnce(comments).mockResolvedValueOnce(posts);
+
+      const result = await service.getUserReplies('alice');
+
+      expect(result).toEqual([
+        { id: 1, title: 'Old' },
+        { id: 3, title: 'Discussed' },
+      ]);
+    });
+
+    it('applies before cursor for replies', async () => {
+      const comments = [{ post: { id: 5 } }];
+      em.find
+        .mockResolvedValueOnce(comments)
+        .mockResolvedValueOnce([] as never);
 
       await service.getUserReplies('alice', 10);
 
-      expect(postQb['andWhere']).toHaveBeenCalledWith('p.id < :before', { before: 10 });
+      const [[, secondWhere]] = (em.find.mock.calls as unknown[][]).slice(1);
+      expect(secondWhere).toMatchObject({ id: { $lt: 10 } });
     });
   });
 });

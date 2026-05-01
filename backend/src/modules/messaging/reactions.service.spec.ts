@@ -1,106 +1,109 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { EntityManager } from '@mikro-orm/sqlite';
+import { Test, type TestingModule } from '@nestjs/testing';
+
 import { ReactionsService } from './reactions.service';
-import { MessageReaction } from './message-reaction.entity';
 
 describe('ReactionsService', () => {
   let service: ReactionsService;
-  let mockReactions: {
-    findOne: jest.Mock;
-    create: jest.Mock;
-    save: jest.Mock;
-    delete: jest.Mock;
-    find: jest.Mock;
-    createQueryBuilder: jest.Mock;
-  };
+  let em: jest.Mocked<
+    Pick<
+      EntityManager,
+      | 'getReference'
+      | 'create'
+      | 'persist'
+      | 'flush'
+      | 'find'
+      | 'findOne'
+      | 'nativeDelete'
+    >
+  >;
 
   beforeEach(async () => {
-    mockReactions = {
-      findOne: jest.fn(),
+    em = {
+      getReference: jest.fn(),
       create: jest.fn(),
-      save: jest.fn(),
-      delete: jest.fn(),
+      persist: jest.fn(),
+      flush: jest.fn().mockResolvedValue(undefined),
       find: jest.fn(),
-      createQueryBuilder: jest.fn(),
+      findOne: jest.fn(),
+      nativeDelete: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ReactionsService,
-        { provide: getRepositoryToken(MessageReaction), useValue: mockReactions },
-      ],
+      providers: [ReactionsService, { provide: EntityManager, useValue: em }],
     }).compile();
 
-    service = module.get<ReactionsService>(ReactionsService);
+    service = module.get(ReactionsService);
   });
 
   describe('toggleReaction', () => {
     it('adds a reaction when none exists', async () => {
-      mockReactions.findOne.mockResolvedValue(null);
-      mockReactions.create.mockReturnValue({ messageId: 1, userId: 'u1', emoji: '👍' });
-      mockReactions.save.mockResolvedValue({ id: 1, messageId: 1, userId: 'u1', emoji: '👍' });
-      mockReactions.find.mockResolvedValue([{ messageId: 1, userId: 'u1', emoji: '👍' }]);
+      const msgRef = { id: 1 };
+      const reaction = { message: msgRef, userId: 'u1', emoji: '👍' };
+      em.getReference.mockReturnValue(msgRef);
+      em.findOne.mockResolvedValue(null);
+      em.create.mockReturnValue(reaction);
+      em.persist.mockReturnThis();
+      em.find.mockResolvedValue([reaction] as never);
 
       const result = await service.toggleReaction(1, 'u1', '👍');
 
-      expect(mockReactions.save).toHaveBeenCalledWith({ messageId: 1, userId: 'u1', emoji: '👍' });
+      expect(em.create).toHaveBeenCalledWith(expect.anything(), {
+        message: msgRef,
+        userId: 'u1',
+        emoji: '👍',
+      });
+      expect(em.persist).toHaveBeenCalledWith(reaction);
+      expect(em.flush).toHaveBeenCalled();
       expect(result).toEqual({ '👍': ['u1'] });
     });
 
     it('removes a reaction when it already exists', async () => {
-      mockReactions.findOne.mockResolvedValue({ id: 1, messageId: 1, userId: 'u1', emoji: '👍' });
-      mockReactions.delete.mockResolvedValue({ affected: 1 });
-      mockReactions.find.mockResolvedValue([]);
+      const msgRef = { id: 1 };
+      em.getReference.mockReturnValue(msgRef);
+      em.findOne.mockResolvedValue({
+        id: 1,
+        message: msgRef,
+        userId: 'u1',
+        emoji: '👍',
+      } as never);
+      em.nativeDelete.mockResolvedValue(1);
+      em.find.mockResolvedValue([] as never);
 
       const result = await service.toggleReaction(1, 'u1', '👍');
 
-      expect(mockReactions.delete).toHaveBeenCalledWith({ messageId: 1, userId: 'u1', emoji: '👍' });
+      expect(em.nativeDelete).toHaveBeenCalledWith(expect.anything(), {
+        message: msgRef,
+        userId: 'u1',
+        emoji: '👍',
+      });
       expect(result).toEqual({});
     });
   });
 
   describe('getReactionsForRoom', () => {
     it('returns aggregated reactions keyed by messageId', async () => {
-      const mockQB = {
-        innerJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([
-          { messageId: 1, userId: 'u1', emoji: '👍' },
-          { messageId: 1, userId: 'u2', emoji: '👍' },
-          { messageId: 2, userId: 'u1', emoji: '❤️' },
-        ]),
-      };
-      mockReactions.createQueryBuilder.mockReturnValue(mockQB);
+      em.find.mockResolvedValue([
+        { message: { id: 1 }, userId: 'u1', emoji: '👍' },
+        { message: { id: 1 }, userId: 'u2', emoji: '👍' },
+        { message: { id: 2 }, userId: 'u1', emoji: '❤️' },
+      ] as never);
 
       const result = await service.getReactionsForRoom(5);
 
-      expect(mockQB.innerJoin).toHaveBeenCalledWith('r.message', 'm');
-      expect(mockQB.where).toHaveBeenCalledWith('m.roomId = :roomId', { roomId: 5 });
-      expect(result).toEqual({ 1: { '👍': ['u1', 'u2'] }, 2: { '❤️': ['u1'] } });
-    });
-
-    it('queries reactions through the message relation so deleted posts do not leak into room snapshots', async () => {
-      const mockQB = {
-        innerJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([]),
-      };
-      mockReactions.createQueryBuilder.mockReturnValue(mockQB);
-
-      await service.getReactionsForRoom(7);
-
-      expect(mockQB.innerJoin).toHaveBeenCalledWith('r.message', 'm');
-      expect(mockQB.where).toHaveBeenCalledWith('m.roomId = :roomId', { roomId: 7 });
+      expect(em.find).toHaveBeenCalledWith(
+        expect.anything(),
+        { message: { room: { id: 5 } } },
+        expect.objectContaining({ populate: ['message'] }),
+      );
+      expect(result).toEqual({
+        1: { '👍': ['u1', 'u2'] },
+        2: { '❤️': ['u1'] },
+      });
     });
 
     it('returns empty object when no reactions', async () => {
-      const mockQB = {
-        innerJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([]),
-      };
-      mockReactions.createQueryBuilder.mockReturnValue(mockQB);
-
+      em.find.mockResolvedValue([] as never);
       expect(await service.getReactionsForRoom(5)).toEqual({});
     });
   });

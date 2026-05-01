@@ -1,32 +1,40 @@
+import { EntityManager } from '@mikro-orm/sqlite';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
+import { Room } from '../rooms/room.entity';
 import { RoomUser } from './room-user.entity';
 
 @Injectable()
 export class PresenceService {
-  constructor(
-    @InjectRepository(RoomUser) private readonly roomUsers: Repository<RoomUser>,
-  ) {}
+  constructor(private readonly em: EntityManager) {}
 
   async getUsersInRoom(roomId: number): Promise<RoomUser[]> {
-    return this.roomUsers.find({ where: { roomId } });
+    const room = this.em.getReference(Room, roomId);
+    return this.em.find(RoomUser, { room });
   }
 
   async addUserToRoom(roomId: number, userId: string): Promise<RoomUser> {
-    await this.roomUsers.upsert({ roomId, userId }, ['roomId', 'userId']);
-    return this.roomUsers.findOneOrFail({ where: { roomId, userId } });
+    const room = this.em.getReference(Room, roomId);
+    let roomUser = await this.em.findOne(RoomUser, { room, userId });
+    if (!roomUser) {
+      roomUser = this.em.create(RoomUser, { room, userId });
+      this.em.persist(roomUser);
+      await this.em.flush();
+    }
+    return roomUser;
   }
 
   async removeUserFromRoom(roomId: number, userId: string): Promise<void> {
-    await this.roomUsers.delete({ roomId, userId });
+    const room = this.em.getReference(Room, roomId);
+    await this.em.nativeDelete(RoomUser, { room, userId });
   }
 
   async clearPresence(): Promise<void> {
-    await this.roomUsers.clear();
+    await this.em.nativeDelete(RoomUser, {});
   }
 
   async clearRoomPresence(roomId: number): Promise<void> {
-    await this.roomUsers.delete({ roomId });
+    const room = this.em.getReference(Room, roomId);
+    await this.em.nativeDelete(RoomUser, { room });
   }
 }

@@ -1,45 +1,68 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { EntityManager } from '@mikro-orm/sqlite';
+import { Test, type TestingModule } from '@nestjs/testing';
+
 import { TypingService } from './typing.service';
-import { TypingStatus } from './typing-status.entity';
 
 describe('TypingService', () => {
   let service: TypingService;
-  let mockRepo: {
-    create: jest.Mock;
-    save: jest.Mock;
-    delete: jest.Mock;
-  };
+  let em: jest.Mocked<
+    Pick<EntityManager, 'create' | 'persist' | 'flush' | 'nativeDelete'>
+  >;
 
   beforeEach(async () => {
-    mockRepo = { create: jest.fn(), save: jest.fn(), delete: jest.fn() };
+    em = {
+      create: jest.fn(),
+      persist: jest.fn(),
+      flush: jest.fn().mockResolvedValue(undefined),
+      nativeDelete: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        TypingService,
-        { provide: getRepositoryToken(TypingStatus), useValue: mockRepo },
-      ],
+      providers: [TypingService, { provide: EntityManager, useValue: em }],
     }).compile();
 
-    service = module.get<TypingService>(TypingService);
+    service = module.get(TypingService);
   });
 
   it('should mark user as typing', async () => {
-    const mockStatus = { id: 1, roomId: 1, userId: 'user1', expiresAt: new Date() };
-    mockRepo.create.mockReturnValue(mockStatus);
-    mockRepo.save.mockResolvedValue(mockStatus);
+    const mockStatus = {
+      id: 1,
+      roomId: 1,
+      userId: 'user1',
+      expiresAt: new Date(),
+    };
+    em.create.mockReturnValue(mockStatus);
+    em.persist.mockReturnThis();
 
     const result = await service.markUserTyping(1, 'user1');
 
     expect(result).toEqual(mockStatus);
-    expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ roomId: 1, userId: 'user1' }));
+    expect(em.create).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ roomId: 1, userId: 'user1' }),
+    );
+    expect(em.persist).toHaveBeenCalledWith(mockStatus);
+    expect(em.flush).toHaveBeenCalled();
   });
 
   it('should remove user typing status', async () => {
-    mockRepo.delete.mockResolvedValue({ affected: 1 });
+    em.nativeDelete.mockResolvedValue(1);
 
     await service.removeUserTyping(1, 'user1');
 
-    expect(mockRepo.delete).toHaveBeenCalledWith({ roomId: 1, userId: 'user1' });
+    expect(em.nativeDelete).toHaveBeenCalledWith(expect.anything(), {
+      roomId: 1,
+      userId: 'user1',
+    });
+  });
+
+  it('should clear all typing statuses for a room', async () => {
+    em.nativeDelete.mockResolvedValue(0);
+
+    await service.clearRoomTyping(1);
+
+    expect(em.nativeDelete).toHaveBeenCalledWith(expect.anything(), {
+      roomId: 1,
+    });
   });
 });

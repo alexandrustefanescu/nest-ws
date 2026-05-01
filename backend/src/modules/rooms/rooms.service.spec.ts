@@ -1,72 +1,73 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { EntityManager } from '@mikro-orm/sqlite';
+import { Test, type TestingModule } from '@nestjs/testing';
+
 import { RoomsService } from './rooms.service';
-import { Room } from './room.entity';
 
 describe('RoomsService', () => {
   let service: RoomsService;
-  let mockRooms: {
-    find: jest.Mock;
-    findOne: jest.Mock;
-    create: jest.Mock;
-    save: jest.Mock;
-    delete: jest.Mock;
-  };
+  let em: jest.Mocked<
+    Pick<
+      EntityManager,
+      'find' | 'findOne' | 'create' | 'persist' | 'flush' | 'nativeDelete'
+    >
+  >;
 
   beforeEach(async () => {
-    mockRooms = {
+    em = {
       find: jest.fn(),
       findOne: jest.fn(),
       create: jest.fn(),
-      save: jest.fn(),
-      delete: jest.fn(),
+      persist: jest.fn(),
+      flush: jest.fn().mockResolvedValue(undefined),
+      nativeDelete: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RoomsService,
-        { provide: getRepositoryToken(Room), useValue: mockRooms },
-      ],
+      providers: [RoomsService, { provide: EntityManager, useValue: em }],
     }).compile();
 
-    service = module.get<RoomsService>(RoomsService);
+    service = module.get(RoomsService);
   });
 
   it('should return all rooms', async () => {
     const rooms = [{ id: 1, name: 'general', createdAt: new Date() }];
-    mockRooms.find.mockResolvedValue(rooms);
+    em.find.mockResolvedValue(rooms);
 
     expect(await service.getAllRooms()).toEqual(rooms);
-    expect(mockRooms.find).toHaveBeenCalled();
+    expect(em.find).toHaveBeenCalledWith(expect.anything(), {});
   });
 
   it('should return a room by id', async () => {
     const room = { id: 1, name: 'general', createdAt: new Date() };
-    mockRooms.findOne.mockResolvedValue(room);
+    em.findOne.mockResolvedValue(room);
 
     expect(await service.getRoomById(1)).toEqual(room);
-    expect(mockRooms.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+    expect(em.findOne).toHaveBeenCalledWith(expect.anything(), { id: 1 });
   });
 
   it('should return null when room not found', async () => {
-    mockRooms.findOne.mockResolvedValue(null);
+    em.findOne.mockResolvedValue(null);
     expect(await service.getRoomById(999)).toBeNull();
   });
 
   it('should create a new room', async () => {
     const room = { id: 1, name: 'new-room', createdAt: new Date() };
-    mockRooms.create.mockReturnValue(room);
-    mockRooms.save.mockResolvedValue(room);
+    em.create.mockReturnValue(room);
+    em.persist.mockReturnThis();
 
     expect(await service.createRoom('new-room')).toEqual(room);
-    expect(mockRooms.create).toHaveBeenCalledWith({ name: 'new-room' });
+    expect(em.create).toHaveBeenCalledWith(expect.anything(), {
+      name: 'new-room',
+    });
+    expect(em.persist).toHaveBeenCalledWith(room);
+    expect(em.flush).toHaveBeenCalled();
   });
 
   it('should delete a room', async () => {
-    mockRooms.delete.mockResolvedValue({ affected: 1 });
+    em.nativeDelete.mockResolvedValue(1);
 
     await service.deleteRoom(1);
 
-    expect(mockRooms.delete).toHaveBeenCalledWith({ id: 1 });
+    expect(em.nativeDelete).toHaveBeenCalledWith(expect.anything(), { id: 1 });
   });
 });

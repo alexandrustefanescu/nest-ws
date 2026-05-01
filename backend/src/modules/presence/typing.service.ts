@@ -1,25 +1,30 @@
+import { EntityManager } from '@mikro-orm/sqlite';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+
 import { TypingStatus } from './typing-status.entity';
 
 @Injectable()
 export class TypingService {
-  constructor(
-    @InjectRepository(TypingStatus) private readonly typingStatuses: Repository<TypingStatus>,
-  ) {}
+  constructor(private readonly em: EntityManager) {}
 
   async markUserTyping(roomId: number, userId: string): Promise<TypingStatus> {
     const expiresAt = new Date(Date.now() + 5000);
-    const typingStatus = this.typingStatuses.create({ roomId, userId, expiresAt });
-    return this.typingStatuses.save(typingStatus);
+    await this.em.nativeDelete(TypingStatus, { roomId, userId });
+    const typingStatus = this.em.create(TypingStatus, {
+      roomId,
+      userId,
+      expiresAt,
+    });
+    this.em.persist(typingStatus);
+    await this.em.flush();
+    return typingStatus;
   }
 
   async removeUserTyping(roomId: number, userId: string): Promise<void> {
-    await this.typingStatuses.delete({ roomId, userId });
+    await this.em.nativeDelete(TypingStatus, { roomId, userId });
   }
 
   async clearRoomTyping(roomId: number): Promise<void> {
-    await this.typingStatuses.delete({ roomId });
+    await this.em.nativeDelete(TypingStatus, { roomId });
   }
 }

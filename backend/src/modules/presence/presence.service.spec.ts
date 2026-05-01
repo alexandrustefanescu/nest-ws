@@ -1,80 +1,109 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { EntityManager } from '@mikro-orm/sqlite';
+import { Test, type TestingModule } from '@nestjs/testing';
+
 import { PresenceService } from './presence.service';
-import { RoomUser } from './room-user.entity';
 
 describe('PresenceService', () => {
   let service: PresenceService;
-  let mockRoomUsers: {
-    find: jest.Mock;
-    findOneOrFail: jest.Mock;
-    upsert: jest.Mock;
-    delete: jest.Mock;
-    clear: jest.Mock;
-  };
+  let em: jest.Mocked<
+    Pick<
+      EntityManager,
+      | 'getReference'
+      | 'find'
+      | 'findOne'
+      | 'create'
+      | 'persist'
+      | 'flush'
+      | 'nativeDelete'
+    >
+  >;
 
   beforeEach(async () => {
-    mockRoomUsers = {
+    em = {
+      getReference: jest.fn(),
       find: jest.fn(),
-      findOneOrFail: jest.fn(),
-      upsert: jest.fn(),
-      delete: jest.fn(),
-      clear: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      persist: jest.fn(),
+      flush: jest.fn().mockResolvedValue(undefined),
+      nativeDelete: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        PresenceService,
-        { provide: getRepositoryToken(RoomUser), useValue: mockRoomUsers },
-      ],
+      providers: [PresenceService, { provide: EntityManager, useValue: em }],
     }).compile();
 
-    service = module.get<PresenceService>(PresenceService);
+    service = module.get(PresenceService);
   });
 
   it('should get users in a room', async () => {
-    const users = [{ id: 1, roomId: 1, userId: 'user1', joinedAt: new Date() }];
-    mockRoomUsers.find.mockResolvedValue(users);
+    const roomRef = { id: 1 };
+    const users = [
+      { id: 1, room: roomRef, userId: 'user1', joinedAt: new Date() },
+    ];
+    em.getReference.mockReturnValue(roomRef);
+    em.find.mockResolvedValue(users);
 
     expect(await service.getUsersInRoom(1)).toEqual(users);
-    expect(mockRoomUsers.find).toHaveBeenCalledWith({ where: { roomId: 1 } });
+    expect(em.find).toHaveBeenCalledWith(expect.anything(), { room: roomRef });
   });
 
-  it('should add user to room via upsert', async () => {
-    const roomUser = { id: 1, roomId: 1, userId: 'user1', joinedAt: new Date() };
-    mockRoomUsers.upsert.mockResolvedValue(undefined);
-    mockRoomUsers.findOneOrFail.mockResolvedValue(roomUser);
+  it('should add user to room when not already present', async () => {
+    const roomRef = { id: 1 };
+    const roomUser = {
+      id: 1,
+      room: roomRef,
+      userId: 'user1',
+      joinedAt: new Date(),
+    };
+    em.getReference.mockReturnValue(roomRef);
+    em.findOne.mockResolvedValue(null);
+    em.create.mockReturnValue(roomUser);
+    em.persist.mockReturnThis();
 
     expect(await service.addUserToRoom(1, 'user1')).toEqual(roomUser);
-    expect(mockRoomUsers.upsert).toHaveBeenCalledWith(
-      { roomId: 1, userId: 'user1' },
-      ['roomId', 'userId'],
-    );
+    expect(em.create).toHaveBeenCalledWith(expect.anything(), {
+      room: roomRef,
+      userId: 'user1',
+    });
+    expect(em.persist).toHaveBeenCalledWith(roomUser);
+    expect(em.flush).toHaveBeenCalled();
   });
 
   it('should not create a duplicate when called twice for the same user', async () => {
-    const existing = { id: 1, roomId: 1, userId: 'user1', joinedAt: new Date() };
-    mockRoomUsers.upsert.mockResolvedValue(undefined);
-    mockRoomUsers.findOneOrFail.mockResolvedValue(existing);
+    const roomRef = { id: 1 };
+    const existing = {
+      id: 1,
+      room: roomRef,
+      userId: 'user1',
+      joinedAt: new Date(),
+    };
+    em.getReference.mockReturnValue(roomRef);
+    em.findOne.mockResolvedValue(existing);
 
     expect(await service.addUserToRoom(1, 'user1')).toEqual(existing);
     expect(await service.addUserToRoom(1, 'user1')).toEqual(existing);
-    expect(mockRoomUsers.upsert).toHaveBeenCalledTimes(2);
+    expect(em.create).not.toHaveBeenCalled();
   });
 
   it('should remove user from room', async () => {
-    mockRoomUsers.delete.mockResolvedValue({ affected: 1 });
+    const roomRef = { id: 1 };
+    em.getReference.mockReturnValue(roomRef);
+    em.nativeDelete.mockResolvedValue(1);
 
     await service.removeUserFromRoom(1, 'user1');
 
-    expect(mockRoomUsers.delete).toHaveBeenCalledWith({ roomId: 1, userId: 'user1' });
+    expect(em.nativeDelete).toHaveBeenCalledWith(expect.anything(), {
+      room: roomRef,
+      userId: 'user1',
+    });
   });
 
   it('should clear all presence on startup', async () => {
-    mockRoomUsers.clear.mockResolvedValue(undefined);
+    em.nativeDelete.mockResolvedValue(0);
 
     await service.clearPresence();
 
-    expect(mockRoomUsers.clear).toHaveBeenCalled();
+    expect(em.nativeDelete).toHaveBeenCalledWith(expect.anything(), {});
   });
 });
