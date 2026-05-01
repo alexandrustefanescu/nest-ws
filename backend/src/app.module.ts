@@ -9,6 +9,8 @@ import { RoomsModule } from './modules/rooms/rooms.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { PresenceModule } from './modules/presence/presence.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { SocialModule } from './modules/social/social.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { ChatModule } from './modules/chat/chat.module';
     }),
     RoomsModule,
     MessagingModule,
+    SocialModule,
+    NotificationsModule,
     PresenceModule,
     ChatModule,
     HealthModule,
