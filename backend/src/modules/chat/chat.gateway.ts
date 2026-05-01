@@ -83,6 +83,16 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     this.wsThrottlerGuard.evict(client.id);
   }
 
+  @SubscribeMessage('user:identify')
+  handleIdentify(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { userId: string },
+  ): void {
+    if (data?.userId) {
+      void client.join(`user:${data.userId}`);
+    }
+  }
+
   @WsThrottle(10, 60000)
   @UseGuards(WsThrottlerGuard)
   @SubscribeMessage('room:join')
@@ -114,7 +124,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     const snapshot = await this.reactionsService.getReactionsForRoom(roomId);
     client.emit('reactions:snapshot', snapshot);
 
-    const history = await this.messagesService.getMessageHistory(roomId);
+    const history = await this.messagesService.getRoomFeed(roomId);
     client.emit('messages:history', {
       roomId,
       messages: history,
@@ -129,22 +139,19 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() data: SendMessageDto,
   ) {
-    const { roomId, userId, text } = data;
+    const message = await this.createRoomPost(data);
+    this.emitPostCreated(message);
+  }
 
-    const room = await this.roomsService.getRoomById(roomId);
-    if (!room) {
-      throw new WsException('Room not found');
-    }
-
-    const message = await this.messagesService.saveMessage(roomId, userId, text);
-
-    this.server.to(`room-${roomId}`).emit('message:new', {
-      id: message.id,
-      roomId,
-      userId,
-      text,
-      createdAt: message.createdAt,
-    });
+  @WsThrottle(20, 60000)
+  @UseGuards(WsThrottlerGuard)
+  @SubscribeMessage('post:create')
+  async handleCreatePost(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: SendMessageDto,
+  ) {
+    const message = await this.createRoomPost(data);
+    this.emitPostCreated(message);
   }
 
   @WsThrottle(60, 60000)
@@ -206,7 +213,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     if (!room) {
       throw new WsException('Room not found');
     }
-    await this.messagesService.clearRoomMessages(roomId);
+    await this.messagesService.clearRoomFeed(roomId);
     await this.presenceService.clearRoomPresence(roomId);
     await this.typingService.clearRoomTyping(roomId);
     await this.roomsService.deleteRoom(roomId);
@@ -249,8 +256,21 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
   async handleLoadMore(
     @MessageBody() data: LoadMoreDto,
   ): Promise<{ messages: Message[]; hasMore: boolean }> {
+    return this.loadMoreRoomFeed(data);
+  }
+
+  @WsThrottle(20, 60000)
+  @UseGuards(WsThrottlerGuard)
+  @SubscribeMessage('posts:load-more')
+  async handleLoadMorePosts(
+    @MessageBody() data: LoadMoreDto,
+  ): Promise<{ messages: Message[]; hasMore: boolean }> {
+    return this.loadMoreRoomFeed(data);
+  }
+
+  private async loadMoreRoomFeed(data: LoadMoreDto): Promise<{ messages: Message[]; hasMore: boolean }> {
     const { roomId, before } = data;
-    const messages = await this.messagesService.getMessageHistory(roomId, before);
+    const messages = await this.messagesService.getRoomFeed(roomId, before);
     return { messages, hasMore: messages.length === 50 };
   }
 
@@ -261,9 +281,17 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() data: DeleteMessageDto,
   ): Promise<void> {
-    const { roomId, messageId, userId } = data;
-    await this.messagesService.deleteMessage(messageId, userId);
-    this.server.to(`room-${roomId}`).emit('message:deleted', { roomId, messageId });
+    await this.deleteRoomPost(data);
+  }
+
+  @WsThrottle(20, 60000)
+  @UseGuards(WsThrottlerGuard)
+  @SubscribeMessage('post:delete')
+  async handleDeletePost(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: DeleteMessageDto,
+  ): Promise<void> {
+    await this.deleteRoomPost(data);
   }
 
   @WsThrottle(10, 60000)
@@ -274,7 +302,7 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
     @MessageBody() data: ClearChatDto,
   ): Promise<void> {
     const { roomId } = data;
-    await this.messagesService.clearRoomMessages(roomId);
+    await this.messagesService.clearRoomFeed(roomId);
     this.server.to(`room-${roomId}`).emit('chat:cleared', { roomId });
   }
 
@@ -286,5 +314,33 @@ export class ChatGateway implements OnModuleInit, OnGatewayConnection, OnGateway
 
     const users = await this.presenceService.getUsersInRoom(roomId);
     this.server.to(`room-${roomId}`).emit('users:list', { roomId, users });
+  }
+
+  private async createRoomPost(data: SendMessageDto): Promise<Message> {
+    const { roomId, userId, text } = data;
+    const room = await this.roomsService.getRoomById(roomId);
+    if (!room) {
+      throw new WsException('Room not found');
+    }
+    return this.messagesService.createPost(roomId, userId, text);
+  }
+
+  private emitPostCreated(message: Message): void {
+    const event = {
+      id: message.id,
+      roomId: message.roomId,
+      userId: message.userId,
+      text: message.text,
+      createdAt: message.createdAt,
+    };
+    this.server.to(`room-${message.roomId}`).emit('message:new', event);
+    this.server.to(`room-${message.roomId}`).emit('post:created', event);
+  }
+
+  private async deleteRoomPost(data: DeleteMessageDto): Promise<void> {
+    const { roomId, messageId, userId } = data;
+    await this.messagesService.deletePost(messageId, userId);
+    this.server.to(`room-${roomId}`).emit('message:deleted', { roomId, messageId });
+    this.server.to(`room-${roomId}`).emit('post:deleted', { roomId, messageId });
   }
 }
