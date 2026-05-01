@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { RoomsModule } from '../rooms/rooms.module';
 import { BookmarksController } from './bookmarks.controller';
 import { PostBookmark } from './post-bookmark.entity';
@@ -11,7 +12,7 @@ import { RoomSocialPostsController, SocialPostsController } from './social-posts
 import { SocialPostsService } from './social-posts.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SocialPost, PostComment, PostLike, PostBookmark]), RoomsModule],
+  imports: [TypeOrmModule.forFeature([SocialPost, PostComment, PostLike, PostBookmark]), RoomsModule, NotificationsModule],
   controllers: [SocialPostsController, RoomSocialPostsController, BookmarksController],
   providers: [SocialPostsService, SocialEngagementService],
   exports: [SocialPostsService, SocialEngagementService],

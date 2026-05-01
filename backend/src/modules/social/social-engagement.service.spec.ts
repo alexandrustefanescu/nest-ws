@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PostBookmark } from './post-bookmark.entity';
 import { PostComment } from './post-comment.entity';
 import { PostLike } from './post-like.entity';
@@ -62,6 +63,7 @@ describe('SocialEngagementService', () => {
         { provide: getRepositoryToken(PostComment), useValue: mockComments },
         { provide: getRepositoryToken(PostLike), useValue: mockLikes },
         { provide: getRepositoryToken(PostBookmark), useValue: mockBookmarks },
+        { provide: NotificationsService, useValue: { create: jest.fn() } },
       ],
     }).compile();
 

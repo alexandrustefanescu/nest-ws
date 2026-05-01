@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PostBookmark } from './post-bookmark.entity';
 import { PostComment } from './post-comment.entity';
 import { PostLike } from './post-like.entity';
@@ -23,6 +24,7 @@ export class SocialEngagementService {
     private readonly likes: Repository<PostLike>,
     @InjectRepository(PostBookmark)
     private readonly bookmarksRepo: Repository<PostBookmark>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async listComments(postId: number): Promise<PostComment[]> {
@@ -31,17 +33,19 @@ export class SocialEngagementService {
   }
 
   async createComment(postId: number, userId: string, body: string): Promise<PostComment> {
-    await this.requirePost(postId);
+    const post = await this.requirePost(postId);
     const comment = this.comments.create({
       postId,
       userId,
       body: normalizeCommentBody(body),
     });
-    return this.comments.save(comment);
+    const saved = await this.comments.save(comment);
+    void this.notificationsService.create(post.userId, userId, 'comment', postId, post.title);
+    return saved;
   }
 
   async toggleLike(postId: number, userId: string): Promise<{ postId: number; likeCount: number; liked: boolean }> {
-    await this.requirePost(postId);
+    const post = await this.requirePost(postId);
 
     const existing = await this.likes.findOne({ where: { postId, userId } });
     let liked: boolean;
@@ -53,6 +57,7 @@ export class SocialEngagementService {
       const like = this.likes.create({ postId, userId });
       await this.likes.save(like);
       liked = true;
+      void this.notificationsService.create(post.userId, userId, 'like', postId, post.title);
     }
 
     const likeCount = await this.likes.count({ where: { postId } });
