@@ -1,0 +1,43 @@
+<div class="notifications-page">
+  <div class="notifications-header">
+    <h2 class="notifications-title">Notifications</h2>
+    @if (svc.unreadCount() > 0) {
+      <button mat-button color="primary" (click)="onMarkAllRead()">
+        Mark all as read
+      </button>
+    }
+  </div>
+
+  <mat-divider />
+
+  @if (svc.notifications().length === 0) {
+    <div class="notifications-empty">
+      <mat-icon>notifications_none</mat-icon>
+      <p>No notifications yet</p>
+    </div>
+  }
+
+  @for (n of svc.notifications(); track n.id) {
+    <div
+      class="notification-item"
+      [class.unread]="!n.read"
+      (click)="onNotificationClick(n.id, n.postId, n.read)"
+      (keydown.enter)="onNotificationClick(n.id, n.postId, n.read)"
+      tabindex="0"
+      role="button"
+    >
+      <mat-icon class="notification-icon" [class.like-icon]="n.type === 'like'">
+        {{ n.type === 'like' ? 'favorite' : 'chat_bubble' }}
+      </mat-icon>
+      <div class="notification-body">
+        <span class="notification-actor">{{ n.actorId }}</span>
+        <span class="notification-action"> {{ actionText(n.type) }} </span>
+        <span class="notification-post">"{{ n.postTitle }}"</span>
+      </div>
+      @if (!n.read) {
+        <span class="unread-dot" aria-label="unread"></span>
+      }
+    </div>
+    <mat-divider />
+  }
+</div>
