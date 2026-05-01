@@ -9,7 +9,7 @@ export class PostBookmark {
   @PrimaryKey()
   id!: number;
 
-  @ManyToOne(() => SocialPost, { deleteRule: 'cascade', eager: false })
+  @ManyToOne(() => SocialPost, { deleteRule: 'cascade' })
   post!: SocialPost;
 
   @ApiProperty({ example: 'user-123' })

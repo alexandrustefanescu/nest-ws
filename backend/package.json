@@ -24,7 +24,6 @@
     "@fastify/helmet": "^13.0.2",
     "@mikro-orm/core": "^7.0.13",
     "@mikro-orm/nestjs": "^7.0.1",
-    "@mikro-orm/postgresql": "^7.0.13",
     "@mikro-orm/sqlite": "^7.0.13",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",

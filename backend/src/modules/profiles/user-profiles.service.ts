@@ -58,7 +58,7 @@ export class UserProfilesService {
     const comments = await this.em.find(
       PostComment,
       { userId },
-      { fields: ['post'] },
+      { populate: ['post'] },
     );
     const postIds = [...new Set(comments.map((c) => c.post.id))];
     if (postIds.length === 0) return [];

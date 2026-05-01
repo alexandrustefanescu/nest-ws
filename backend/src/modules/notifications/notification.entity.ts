@@ -16,7 +16,7 @@ export class Notification {
   @Property({ columnType: 'text' })
   type!: NotificationType;
 
-  @ManyToOne(() => SocialPost, { deleteRule: 'cascade', eager: false })
+  @ManyToOne(() => SocialPost, { deleteRule: 'cascade' })
   post!: SocialPost;
 
   @Property({ default: false })

@@ -24,7 +24,9 @@ async function bootstrap() {
   );
 
   const orm = app.get(MikroORM);
-  await orm.getSchemaGenerator().updateSchema();
+  if (!env.isProduction) {
+    await orm.getSchemaGenerator().updateSchema();
+  }
 
   app.useGlobalPipes(
     new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
