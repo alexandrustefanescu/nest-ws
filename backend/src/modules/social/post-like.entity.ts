@@ -2,14 +2,14 @@ import { Entity, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/core
 import { ApiProperty } from '@nestjs/swagger';
 import { SocialPost } from './social-post.entity';
 
-@Entity({ tableName: 'post_bookmarks' })
+@Entity({ tableName: 'post_likes' })
 @Unique({ properties: ['post', 'userId'] })
-export class PostBookmark {
+export class PostLike {
   @ApiProperty({ example: 1 })
   @PrimaryKey()
   id!: number;
 
-  @ManyToOne(() => SocialPost, { deleteRule: 'cascade', eager: false })
+  @ManyToOne(() => SocialPost, { deleteRule: 'cascade' })
   post!: SocialPost;
 
   @ApiProperty({ example: 'user-123' })
