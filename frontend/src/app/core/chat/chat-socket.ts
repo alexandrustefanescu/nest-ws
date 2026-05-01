@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../../environments/environment';
 import { Identity } from '../identity/identity';
-import type { Message, ReactionMap, Room, RoomUser } from '@repo/shared-types';
+import type { Message, Post, ReactionMap, Room, RoomUser } from '@repo/shared-types';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
 
@@ -48,10 +48,18 @@ export class ChatSocket {
   readonly currentRoomId = signal<number | null>(null);
   readonly roomUsers = signal<Record<number, RoomUser[]>>({});
   readonly roomMessages = signal<Record<number, Message[]>>({});
+  readonly roomPosts = this.roomMessages;
   readonly typingUsers = signal<Record<number, Set<string>>>({});
   readonly roomReactions = signal<Record<number, ReactionMap>>({});
+  readonly roomPostReactions = this.roomReactions;
   readonly roomHasMore = signal<Record<number, boolean>>({});
   readonly isLoadingMore = signal(false);
+
+  private notificationCallback: ((n: unknown) => void) | null = null;
+
+  onNotification(cb: (n: unknown) => void): void {
+    this.notificationCallback = cb;
+  }
 
   constructor() {
     this.hydrateRoomsFromTransferOrStorage();
@@ -103,6 +111,10 @@ export class ChatSocket {
     this.socket.on('connect', () => {
       this.connectionState.set('connected');
       this.hasConnectedOnce.set(true);
+      const userId = this.identity.userId();
+      if (userId) {
+        this.socket?.emit('user:identify', { userId });
+      }
       const current = this.currentRoomId();
       if (current !== null) {
         this.joinRoom(current);
@@ -149,12 +161,7 @@ export class ChatSocket {
       this.roomUsers.update((prev) => ({ ...prev, [data.roomId]: data.users }));
     });
 
-    this.socket.on('message:new', (msg: Message) => {
-      this.roomMessages.update((prev) => ({
-        ...prev,
-        [msg.roomId]: [...(prev[msg.roomId] ?? []), msg],
-      }));
-    });
+    this.socket.on('post:created', (post: Post) => this.appendRoomPost(post));
 
     this.socket.on('user:typing', (data: { userId: string; roomId?: number }) => {
       const roomId = this.currentRoomId();
@@ -200,21 +207,15 @@ export class ChatSocket {
       this.roomHasMore.update((prev) => ({ ...prev, [data.roomId]: data.hasMore }));
     });
 
-    this.socket.on('message:deleted', (data: { roomId: number; messageId: number }) => {
-      this.roomMessages.update((prev) => ({
-        ...prev,
-        [data.roomId]: (prev[data.roomId] ?? []).filter((m) => m.id !== data.messageId),
-      }));
-      this.roomReactions.update((prev) => {
-        const next = { ...prev };
-        delete next[data.messageId];
-        return next;
-      });
-    });
+    this.socket.on('post:deleted', (data: { roomId: number; messageId: number }) => this.removeRoomPost(data));
 
     this.socket.on('chat:cleared', (data: { roomId: number }) => {
       this.roomMessages.update((prev) => ({ ...prev, [data.roomId]: [] }));
       this.roomReactions.set({});
+    });
+
+    this.socket.on('notification:new', (data: unknown) => {
+      this.notificationCallback?.(data);
     });
   }
 
@@ -241,9 +242,13 @@ export class ChatSocket {
   }
 
   sendMessage(roomId: number, text: string): void {
+    this.createPost(roomId, text);
+  }
+
+  createPost(roomId: number, text: string): void {
     const trimmed = text.trim();
     if (!trimmed) return;
-    this.socket?.emit('message:send', { roomId, userId: this.identity.userId(), text: trimmed });
+    this.socket?.emit('post:create', { roomId, userId: this.identity.userId(), text: trimmed });
   }
 
   typingStart(roomId: number): void {
@@ -263,10 +268,14 @@ export class ChatSocket {
   }
 
   loadMoreMessages(roomId: number, before: number): void {
+    this.loadMorePosts(roomId, before);
+  }
+
+  loadMorePosts(roomId: number, before: number): void {
     if (this.isLoadingMore()) return;
     this.isLoadingMore.set(true);
     this.socket?.emit(
-      'messages:load-more',
+      'posts:load-more',
       { roomId, before },
       (res: { messages: Message[]; hasMore: boolean }) => {
         this.roomMessages.update((prev) => ({
@@ -280,7 +289,11 @@ export class ChatSocket {
   }
 
   deleteMessage(roomId: number, messageId: number): void {
-    this.socket?.emit('message:delete', { roomId, messageId, userId: this.identity.userId() });
+    this.deletePost(roomId, messageId);
+  }
+
+  deletePost(roomId: number, messageId: number): void {
+    this.socket?.emit('post:delete', { roomId, messageId, userId: this.identity.userId() });
   }
 
   clearChat(roomId: number): void {
@@ -308,5 +321,24 @@ export class ChatSocket {
       clearTimeout(timer);
       this.typingTimers.delete(roomId);
     }
+  }
+
+  private appendRoomPost(post: Post): void {
+    this.roomMessages.update((prev) => ({
+      ...prev,
+      [post.roomId]: [...(prev[post.roomId] ?? []), post],
+    }));
+  }
+
+  private removeRoomPost(data: { roomId: number; messageId: number }): void {
+    this.roomMessages.update((prev) => ({
+      ...prev,
+      [data.roomId]: (prev[data.roomId] ?? []).filter((m) => m.id !== data.messageId),
+    }));
+    this.roomReactions.update((prev) => {
+      const next = { ...prev };
+      delete next[data.messageId];
+      return next;
+    });
   }
 }
