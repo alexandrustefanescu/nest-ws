@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { EntityManager } from '@mikro-orm/sqlite';
 import { Test, type TestingModule } from '@nestjs/testing';
 
@@ -59,14 +60,12 @@ describe('PresenceService', () => {
     em.getReference.mockReturnValue(roomRef);
     em.findOne.mockResolvedValue(null);
     em.create.mockReturnValue(roomUser);
-    em.persist.mockReturnThis();
 
     expect(await service.addUserToRoom(1, 'user1')).toEqual(roomUser);
     expect(em.create).toHaveBeenCalledWith(expect.anything(), {
       room: roomRef,
       userId: 'user1',
     });
-    expect(em.persist).toHaveBeenCalledWith(roomUser);
     expect(em.flush).toHaveBeenCalled();
   });
 

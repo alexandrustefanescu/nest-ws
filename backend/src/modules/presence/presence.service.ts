@@ -18,7 +18,6 @@ export class PresenceService {
     let roomUser = await this.em.findOne(RoomUser, { room, userId });
     if (!roomUser) {
       roomUser = this.em.create(RoomUser, { room, userId });
-      this.em.persist(roomUser);
       await this.em.flush();
     }
     return roomUser;

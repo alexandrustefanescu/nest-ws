@@ -15,7 +15,6 @@ export class TypingService {
       userId,
       expiresAt,
     });
-    this.em.persist(typingStatus);
     await this.em.flush();
     return typingStatus;
   }

@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { EntityManager } from '@mikro-orm/sqlite';
 import { Test, type TestingModule } from '@nestjs/testing';
 
@@ -32,7 +33,6 @@ describe('TypingService', () => {
       expiresAt: new Date(),
     };
     em.create.mockReturnValue(mockStatus);
-    em.persist.mockReturnThis();
 
     const result = await service.markUserTyping(1, 'user1');
 
@@ -41,7 +41,6 @@ describe('TypingService', () => {
       expect.anything(),
       expect.objectContaining({ roomId: 1, userId: 'user1' }),
     );
-    expect(em.persist).toHaveBeenCalledWith(mockStatus);
     expect(em.flush).toHaveBeenCalled();
   });
 
