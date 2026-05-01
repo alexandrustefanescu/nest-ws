@@ -1,31 +1,27 @@
+import { Entity, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core';
 import type { NotificationType } from '@repo/shared-types';
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { SocialPost } from '../social/social-post.entity';
 
-@Entity('notifications')
+@Entity({ tableName: 'notifications' })
 export class Notification {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryKey()
+  id!: number;
 
-  @Column()
-  recipientId: string;
+  @Property()
+  recipientId!: string;
 
-  @Column()
-  actorId: string;
+  @Property()
+  actorId!: string;
 
-  @Column({ type: 'text' })
-  type: NotificationType;
+  @Property({ columnType: 'text' })
+  type!: NotificationType;
 
-  @Column()
-  postId: number;
+  @ManyToOne(() => SocialPost, { deleteRule: 'cascade', eager: false })
+  post!: SocialPost;
 
-  @Column({ default: false })
-  read: boolean;
+  @Property({ default: false })
+  read: boolean = false;
 
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @ManyToOne(() => SocialPost, { onDelete: 'CASCADE', eager: false })
-  @JoinColumn({ name: 'postId' })
-  post: SocialPost;
+  @Property({ onCreate: () => new Date() })
+  createdAt: Date = new Date();
 }
