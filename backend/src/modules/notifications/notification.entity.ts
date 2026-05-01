@@ -13,7 +13,7 @@ export class Notification {
   @Column()
   actorId: string;
 
-  @Column()
+  @Column({ type: 'text' })
   type: NotificationType;
 
   @Column()
