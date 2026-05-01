@@ -1,3 +1,4 @@
+import { MikroORM } from '@mikro-orm/core';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -21,6 +22,9 @@ async function bootstrap() {
       },
     }
   );
+
+  const orm = app.get(MikroORM);
+  await orm.getSchemaGenerator().updateSchema();
 
   app.useGlobalPipes(
     new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),

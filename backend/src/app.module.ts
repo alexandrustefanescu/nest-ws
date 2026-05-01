@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { databaseConfig } from './config/database.config';
+import { mikroOrmConfig } from './config/database.config';
 import { HealthModule } from './health/health.module';
 import { DocsModule } from './modules/docs/docs.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
@@ -15,7 +15,7 @@ import { UserProfilesModule } from './modules/profiles/user-profiles.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot(databaseConfig),
+    MikroOrmModule.forRoot(mikroOrmConfig),
     ThrottlerModule.forRoot({
       throttlers: [{ ttl: 60000, limit: 50 }],
       skipIf: (ctx) => ctx.getType() !== 'http',
