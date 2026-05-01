@@ -1,0 +1,89 @@
+<div class="profile-layout">
+  @if (svc.loading()) {
+    <div class="profile-loading">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else {
+    <div class="profile-header">
+      @if (!editing()) {
+        <div
+          class="profile-avatar"
+          [style.background]="'hsl(' + userHue() + ', 65%, 55%)'"
+        >{{ userInitial() }}</div>
+
+        <div class="profile-info">
+          <h1 class="profile-display-name">{{ displayName() }}</h1>
+          @if (svc.profile()?.userId !== displayName()) {
+            <span class="profile-user-id">{{ userId }}</span>
+          }
+          <p class="profile-bio">{{ svc.profile()?.bio || 'No bio yet.' }}</p>
+        </div>
+
+        @if (isOwn()) {
+          <button mat-stroked-button class="edit-btn" (click)="startEdit()">
+            <mat-icon>edit</mat-icon>
+            Edit profile
+          </button>
+        }
+      } @else {
+        <div
+          class="profile-avatar"
+          [style.background]="'hsl(' + userHue() + ', 65%, 55%)'"
+        >{{ userInitial() }}</div>
+
+        <div class="profile-edit-form">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Display name</mat-label>
+            <input matInput [(ngModel)]="editDisplayName" maxlength="60" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Bio</mat-label>
+            <textarea matInput [(ngModel)]="editBio" rows="3" maxlength="300"></textarea>
+          </mat-form-field>
+
+          <div class="edit-actions">
+            <button mat-button (click)="cancelEdit()">Cancel</button>
+            <button mat-flat-button (click)="saveEdit()">Save</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <mat-tab-group (selectedTabChange)="onTabChange($event)" animationDuration="0">
+      <mat-tab label="Posts">
+        @if (!postsLoaded()) {
+          <div class="tab-loading"><mat-spinner diameter="28" /></div>
+        } @else if (svc.posts().length === 0) {
+          <div class="tab-empty">
+            <mat-icon>article</mat-icon>
+            <p>No posts yet.</p>
+          </div>
+        } @else {
+          <div class="tab-feed">
+            @for (post of svc.posts(); track post.id) {
+              <app-post-card [post]="post" [currentUserId]="identity.userId()" />
+            }
+          </div>
+        }
+      </mat-tab>
+
+      <mat-tab label="Replies">
+        @if (!repliesLoaded()) {
+          <div class="tab-loading"><mat-spinner diameter="28" /></div>
+        } @else if (svc.replies().length === 0) {
+          <div class="tab-empty">
+            <mat-icon>comment</mat-icon>
+            <p>No replies yet.</p>
+          </div>
+        } @else {
+          <div class="tab-feed">
+            @for (post of svc.replies(); track post.id) {
+              <app-post-card [post]="post" [currentUserId]="identity.userId()" />
+            }
+          </div>
+        }
+      </mat-tab>
+    </mat-tab-group>
+  }
+</div>

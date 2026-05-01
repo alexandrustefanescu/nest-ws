@@ -1,0 +1,100 @@
+:host {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.profile-layout {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.profile-loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  margin-bottom: 16px;
+}
+
+.profile-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+  color: white;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-display-name {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 2px;
+  color: var(--mat-sys-on-surface);
+}
+
+.profile-user-id {
+  font-size: 14px;
+  color: var(--mat-sys-on-surface-variant);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.profile-bio {
+  font-size: 14px;
+  color: var(--mat-sys-on-surface-variant);
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+
+.edit-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.profile-edit-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tab-loading,
+.tab-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 0;
+  gap: 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.tab-feed {
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
