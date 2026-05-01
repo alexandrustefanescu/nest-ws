@@ -143,29 +143,17 @@ export class SocialEngagementService {
       postIds.map((id) => [id, { commentCount: 0, likeCount: 0 }]),
     );
 
-    const [commentRows, likeRows] = await Promise.all([
-      this.em
-        .createQueryBuilder(PostComment, 'comment')
-        .select(['comment.post as postId', 'count(*) as count'])
-        .where({ post: { $in: postIds } })
-        .groupBy('comment.post')
-        .execute<{ postId: string; count: string }>(),
-      this.em
-        .createQueryBuilder(PostLike, 'like')
-        .select(['like.post as postId', 'count(*) as count'])
-        .where({ post: { $in: postIds } })
-        .groupBy('like.post')
-        .execute<{ postId: string; count: string }>(),
+    const [comments, likes] = await Promise.all([
+      this.em.find(PostComment, { post: { id: { $in: postIds } } }),
+      this.em.find(PostLike, { post: { id: { $in: postIds } } }),
     ]);
 
-    type RawRow = { postId: string; count: string };
-    for (const row of commentRows as RawRow[]) {
-      const postId = Number(row.postId);
-      if (base[postId]) base[postId].commentCount = Number(row.count);
+    for (const comment of comments) {
+      base[comment.postId].commentCount += 1;
     }
-    for (const row of likeRows as RawRow[]) {
-      const postId = Number(row.postId);
-      if (base[postId]) base[postId].likeCount = Number(row.count);
+
+    for (const like of likes) {
+      base[like.post.id].likeCount += 1;
     }
 
     return base;
