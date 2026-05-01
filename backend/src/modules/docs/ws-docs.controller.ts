@@ -7,7 +7,7 @@ import {
   RoomsListEventDto,
   UserJoinedEventDto,
   UsersListEventDto,
-  MessageNewEventDto,
+  PostCreatedEventDto,
   UserTypingEventDto,
   UserLeftEventDto,
   WsInfoResponseDto,
@@ -58,10 +58,10 @@ export class WsDocsController {
   @HttpCode(200)
   @ApiOperation({
     summary: 'message:send',
-    description: `**Event:** message:send\n\n${WS_NOTE}\n\nSend a message to a room. Server broadcasts **message:new** to all room members.`,
+    description: `**Event:** message:send\n\n${WS_NOTE}\n\nCreate a room-scoped text/emoji post. The wire event remains **message:send** for compatibility. Server broadcasts **message:new** to all room members.`,
   })
   @ApiBody({ type: SendMessageDto })
-  @ApiResponse({ status: 200, type: MessageNewEventDto, description: 'Server emits: message:new (to room)' })
+  @ApiResponse({ status: 200, type: PostCreatedEventDto, description: 'Server emits: message:new (room-scoped post to room)' })
   messageSend(): WsInfoResponseDto {
     return { message: WS_NOTE };
   }

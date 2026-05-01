@@ -74,7 +74,23 @@ describe('ReactionsService', () => {
 
       const result = await service.getReactionsForRoom(5);
 
+      expect(mockQB.innerJoin).toHaveBeenCalledWith('r.message', 'm');
+      expect(mockQB.where).toHaveBeenCalledWith('m.roomId = :roomId', { roomId: 5 });
       expect(result).toEqual({ 1: { '👍': ['u1', 'u2'] }, 2: { '❤️': ['u1'] } });
+    });
+
+    it('queries reactions through the message relation so deleted posts do not leak into room snapshots', async () => {
+      const mockQB = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockReactions.createQueryBuilder.mockReturnValue(mockQB);
+
+      await service.getReactionsForRoom(7);
+
+      expect(mockQB.innerJoin).toHaveBeenCalledWith('r.message', 'm');
+      expect(mockQB.where).toHaveBeenCalledWith('m.roomId = :roomId', { roomId: 7 });
     });
 
     it('returns empty object when no reactions', async () => {

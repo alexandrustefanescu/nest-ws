@@ -1,12 +1,10 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Message } from './message.entity';
-import { MessageReaction } from './message-reaction.entity';
 import { MessagesService } from './messages.service';
 import { ReactionsService } from './reactions.service';
+import { PostsController } from './posts.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Message, MessageReaction])],
+  controllers: [PostsController],
   providers: [MessagesService, ReactionsService],
   exports: [MessagesService, ReactionsService],
 })

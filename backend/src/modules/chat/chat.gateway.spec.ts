@@ -45,9 +45,13 @@ describe('ChatGateway', () => {
   };
   let mockMessagesService: {
     saveMessage: jest.Mock;
+    createPost: jest.Mock;
     getMessageHistory: jest.Mock;
+    getRoomFeed: jest.Mock;
     deleteMessage: jest.Mock;
+    deletePost: jest.Mock;
     clearRoomMessages: jest.Mock;
+    clearRoomFeed: jest.Mock;
   };
   let mockRoomsService: {
     getAllRooms: jest.Mock;
@@ -81,9 +85,13 @@ describe('ChatGateway', () => {
 
     mockMessagesService = {
       saveMessage: jest.fn(),
+      createPost: jest.fn(),
       getMessageHistory: jest.fn().mockResolvedValue([]),
+      getRoomFeed: jest.fn().mockResolvedValue([]),
       deleteMessage: jest.fn(),
+      deletePost: jest.fn(),
       clearRoomMessages: jest.fn(),
+      clearRoomFeed: jest.fn(),
     };
 
     mockRoomsService = {
@@ -148,12 +156,69 @@ describe('ChatGateway', () => {
     const room = { id: 1, name: 'general', createdAt: new Date() };
     const message = { id: 1, roomId: 1, userId: 'user1', text: 'Hello', createdAt: new Date() };
     mockRoomsService.getRoomById.mockResolvedValue(room);
-    mockMessagesService.saveMessage.mockResolvedValue(message);
+    mockMessagesService.createPost.mockResolvedValue(message);
 
     await gateway.handleSendMessage(mockSocket, { roomId: 1, userId: 'user1', text: 'Hello' });
 
-    expect(mockMessagesService.saveMessage).toHaveBeenCalledWith(1, 'user1', 'Hello');
+    expect(mockMessagesService.createPost).toHaveBeenCalledWith(1, 'user1', 'Hello');
     expect(mockServer.to).toHaveBeenCalledWith('room-1');
+    expect(mockTo.emit).toHaveBeenCalledWith('message:new', {
+      id: 1,
+      roomId: 1,
+      userId: 'user1',
+      text: 'Hello',
+      createdAt: message.createdAt,
+    });
+    expect(mockTo.emit).toHaveBeenCalledWith('post:created', {
+      id: 1,
+      roomId: 1,
+      userId: 'user1',
+      text: 'Hello',
+      createdAt: message.createdAt,
+    });
+  });
+
+  it('should create post through post:create alias', async () => {
+    const room = { id: 1, name: 'general', createdAt: new Date() };
+    const post = { id: 1, roomId: 1, userId: 'user1', text: 'Hello 🔥', createdAt: new Date() };
+    mockRoomsService.getRoomById.mockResolvedValue(room);
+    mockMessagesService.createPost.mockResolvedValue(post);
+
+    await gateway.handleCreatePost(mockSocket, { roomId: 1, userId: 'user1', text: 'Hello 🔥' });
+
+    expect(mockMessagesService.createPost).toHaveBeenCalledWith(1, 'user1', 'Hello 🔥');
+    expect(mockTo.emit).toHaveBeenCalledWith('message:new', {
+      id: 1,
+      roomId: 1,
+      userId: 'user1',
+      text: 'Hello 🔥',
+      createdAt: post.createdAt,
+    });
+    expect(mockTo.emit).toHaveBeenCalledWith('post:created', {
+      id: 1,
+      roomId: 1,
+      userId: 'user1',
+      text: 'Hello 🔥',
+      createdAt: post.createdAt,
+    });
+  });
+
+  it('should pass emoji-only post content through post:create alias unchanged', async () => {
+    const room = { id: 1, name: 'general', createdAt: new Date() };
+    const post = { id: 2, roomId: 1, userId: 'user1', text: '🔥😂❤️', createdAt: new Date() };
+    mockRoomsService.getRoomById.mockResolvedValue(room);
+    mockMessagesService.createPost.mockResolvedValue(post);
+
+    await gateway.handleCreatePost(mockSocket, { roomId: 1, userId: 'user1', text: '🔥😂❤️' });
+
+    expect(mockMessagesService.createPost).toHaveBeenCalledWith(1, 'user1', '🔥😂❤️');
+    expect(mockTo.emit).toHaveBeenCalledWith('post:created', {
+      id: 2,
+      roomId: 1,
+      userId: 'user1',
+      text: '🔥😂❤️',
+      createdAt: post.createdAt,
+    });
   });
 
   it('should mark typing and notify others', async () => {
@@ -232,7 +297,7 @@ describe('ChatGateway', () => {
   it('should delete room, clear data and broadcast rooms list', async () => {
     const room = { id: 1, name: 'general', createdAt: new Date() };
     mockRoomsService.getRoomById.mockResolvedValue(room);
-    mockMessagesService.clearRoomMessages.mockResolvedValue(undefined);
+    mockMessagesService.clearRoomFeed.mockResolvedValue(undefined);
     mockPresenceService.clearRoomPresence = jest.fn().mockResolvedValue(undefined);
     mockTypingService.clearRoomTyping.mockResolvedValue(undefined);
     mockRoomsService.deleteRoom.mockResolvedValue(undefined);
@@ -240,7 +305,7 @@ describe('ChatGateway', () => {
 
     await gateway.handleDeleteRoom(mockSocket, { roomId: 1 });
 
-    expect(mockMessagesService.clearRoomMessages).toHaveBeenCalledWith(1);
+    expect(mockMessagesService.clearRoomFeed).toHaveBeenCalledWith(1);
     expect(mockPresenceService.clearRoomPresence).toHaveBeenCalledWith(1);
     expect(mockTypingService.clearRoomTyping).toHaveBeenCalledWith(1);
     expect(mockRoomsService.deleteRoom).toHaveBeenCalledWith(1);
@@ -284,11 +349,11 @@ describe('ChatGateway', () => {
     mockPresenceService.addUserToRoom.mockResolvedValue({});
     mockPresenceService.getUsersInRoom.mockResolvedValue([]);
     mockReactionsService.getReactionsForRoom.mockResolvedValue({});
-    mockMessagesService.getMessageHistory.mockResolvedValue(history);
+    mockMessagesService.getRoomFeed.mockResolvedValue(history);
 
     await gateway.handleJoinRoom(mockSocket, { roomId: 1, userId: 'u1' });
 
-    expect(mockMessagesService.getMessageHistory).toHaveBeenCalledWith(1);
+    expect(mockMessagesService.getRoomFeed).toHaveBeenCalledWith(1);
     expect(mockSocket.emit).toHaveBeenCalledWith(
       'messages:history',
       { roomId: 1, messages: history, hasMore: false },
@@ -304,7 +369,7 @@ describe('ChatGateway', () => {
     mockPresenceService.addUserToRoom.mockResolvedValue({});
     mockPresenceService.getUsersInRoom.mockResolvedValue([]);
     mockReactionsService.getReactionsForRoom.mockResolvedValue({});
-    mockMessagesService.getMessageHistory.mockResolvedValue(history);
+    mockMessagesService.getRoomFeed.mockResolvedValue(history);
 
     await gateway.handleJoinRoom(mockSocket, { roomId: 1, userId: 'u1' });
 
@@ -316,30 +381,51 @@ describe('ChatGateway', () => {
 
   it('handleLoadMore returns paginated messages via ack', async () => {
     const history = [{ id: 5, roomId: 1, userId: 'u1', text: 'old', createdAt: new Date() }];
-    mockMessagesService.getMessageHistory.mockResolvedValue(history);
+    mockMessagesService.getRoomFeed.mockResolvedValue(history);
 
     const result = await gateway.handleLoadMore({ roomId: 1, before: 10 });
 
-    expect(mockMessagesService.getMessageHistory).toHaveBeenCalledWith(1, 10);
+    expect(mockMessagesService.getRoomFeed).toHaveBeenCalledWith(1, 10);
+    expect(result).toEqual({ messages: history, hasMore: false });
+  });
+
+  it('handleLoadMorePosts returns paginated messages via posts:load-more alias', async () => {
+    const history = [{ id: 5, roomId: 1, userId: 'u1', text: 'old', createdAt: new Date() }];
+    mockMessagesService.getRoomFeed.mockResolvedValue(history);
+
+    const result = await gateway.handleLoadMorePosts({ roomId: 1, before: 10 });
+
+    expect(mockMessagesService.getRoomFeed).toHaveBeenCalledWith(1, 10);
     expect(result).toEqual({ messages: history, hasMore: false });
   });
 
   it('handleDeleteMessage broadcasts message:deleted to room', async () => {
-    mockMessagesService.deleteMessage.mockResolvedValue(undefined);
+    mockMessagesService.deletePost.mockResolvedValue(undefined);
 
     await gateway.handleDeleteMessage(mockSocket, { roomId: 1, messageId: 42, userId: 'u1' });
 
-    expect(mockMessagesService.deleteMessage).toHaveBeenCalledWith(42, 'u1');
+    expect(mockMessagesService.deletePost).toHaveBeenCalledWith(42, 'u1');
     expect(mockServer.to).toHaveBeenCalledWith('room-1');
     expect(mockTo.emit).toHaveBeenCalledWith('message:deleted', { roomId: 1, messageId: 42 });
+    expect(mockTo.emit).toHaveBeenCalledWith('post:deleted', { roomId: 1, messageId: 42 });
+  });
+
+  it('handleDeletePost broadcasts delete events through post:delete alias', async () => {
+    mockMessagesService.deletePost.mockResolvedValue(undefined);
+
+    await gateway.handleDeletePost(mockSocket, { roomId: 1, messageId: 42, userId: 'u1' });
+
+    expect(mockMessagesService.deletePost).toHaveBeenCalledWith(42, 'u1');
+    expect(mockTo.emit).toHaveBeenCalledWith('message:deleted', { roomId: 1, messageId: 42 });
+    expect(mockTo.emit).toHaveBeenCalledWith('post:deleted', { roomId: 1, messageId: 42 });
   });
 
   it('handleClearChat broadcasts chat:cleared to room', async () => {
-    mockMessagesService.clearRoomMessages.mockResolvedValue(undefined);
+    mockMessagesService.clearRoomFeed.mockResolvedValue(undefined);
 
     await gateway.handleClearChat(mockSocket, { roomId: 1, userId: 'u1' });
 
-    expect(mockMessagesService.clearRoomMessages).toHaveBeenCalledWith(1);
+    expect(mockMessagesService.clearRoomFeed).toHaveBeenCalledWith(1);
     expect(mockServer.to).toHaveBeenCalledWith('room-1');
     expect(mockTo.emit).toHaveBeenCalledWith('chat:cleared', { roomId: 1 });
   });

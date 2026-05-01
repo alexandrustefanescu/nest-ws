@@ -49,7 +49,7 @@ export class UsersListEventDto {
 }
 
 export class MessageNewEventDto {
-  @ApiProperty({ example: 42, description: 'Emitted as: message:new — broadcast to the room' })
+  @ApiProperty({ example: 42, description: 'Emitted as: message:new — room-scoped text post broadcast' })
   id: number;
 
   @ApiProperty({ example: 1 })
@@ -64,6 +64,8 @@ export class MessageNewEventDto {
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: string;
 }
+
+export class PostCreatedEventDto extends MessageNewEventDto {}
 
 export class UserTypingEventDto {
   @ApiProperty({ example: 'user-123', description: 'Emitted as: user:typing — broadcast to other room members' })
