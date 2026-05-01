@@ -54,11 +54,7 @@ export class UserProfilesService {
     before?: number,
     limit = DEFAULT_LIMIT,
   ): Promise<SocialPost[]> {
-    const comments = await this.em.find(
-      PostComment,
-      { userId },
-      { populate: ['post'] },
-    );
+    const comments = await this.em.find(PostComment, { userId });
     const postIds = [...new Set(comments.map((c) => c.post.id))];
     if (postIds.length === 0) return [];
 
