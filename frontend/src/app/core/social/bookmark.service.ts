@@ -30,7 +30,7 @@ export class BookmarkService {
   async loadBookmarks(before?: number, limit = 20): Promise<void> {
     this.loading.set(true);
     try {
-      const params: Record<string, string> = {
+      const params: { userId: string; limit: string; before?: string } = {
         userId: this.identity.userId(),
         limit: String(limit),
       };

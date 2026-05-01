@@ -1,0 +1,66 @@
+<div class="feed-layout">
+  <div class="feed-container">
+    <div class="feed-header">
+      <h1 class="feed-title">Bookmarks</h1>
+    </div>
+
+    @if (bookmarks.loading()) {
+      <div class="feed-loading">
+        <mat-spinner diameter="32" />
+      </div>
+    } @else {
+      @let bookmarkedPosts = bookmarks.bookmarks();
+      @if (bookmarkedPosts.length === 0) {
+        <div class="feed-empty">
+          <mat-icon>bookmark_border</mat-icon>
+          <p>No bookmarks yet — save posts you want to revisit!</p>
+        </div>
+      } @else {
+        <div class="feed-list">
+          @for (post of bookmarkedPosts; track post.id) {
+            <app-post-card
+              [post]="post"
+              [currentUserId]="identity.userId()"
+            />
+          }
+        </div>
+      }
+    }
+  </div>
+
+  <aside class="feed-sidebar">
+    <div class="sidebar-card">
+      <h3 class="sidebar-title">Trending</h3>
+      <div class="trending-item">
+        <span class="trending-topic">#angular</span>
+        <span class="trending-count">1.2k posts</span>
+      </div>
+      <div class="trending-item">
+        <span class="trending-topic">#nestjs</span>
+        <span class="trending-count">856 posts</span>
+      </div>
+      <div class="trending-item">
+        <span class="trending-topic">#typescript</span>
+        <span class="trending-count">2.1k posts</span>
+      </div>
+    </div>
+
+    <div class="sidebar-card">
+      <h3 class="sidebar-title">Who to follow</h3>
+      @for (user of suggestedUsers; track user) {
+        <div class="suggested-user">
+          <div
+            class="user-avatar"
+            [style.background]="'hsl(' + userHue(user) + ', 65%, 55%)'"
+          >
+            {{ user[0].toUpperCase() }}
+          </div>
+          <div class="user-info">
+            <span class="user-name">{{ user }}</span>
+          </div>
+          <button class="follow-btn">Follow</button>
+        </div>
+      }
+    </div>
+  </aside>
+</div>
