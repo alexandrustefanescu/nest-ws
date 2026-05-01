@@ -1,0 +1,134 @@
+.post-card {
+  background: var(--surface-1, #fff);
+  border: 1px solid var(--border-subtle, #e5e7eb);
+  border-radius: 12px;
+  padding: 16px;
+  transition: box-shadow 150ms ease;
+}
+
+.post-card:hover {
+  box-shadow: 0 2px 8px oklch(0% 0 0 / 0.06);
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.post-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.author-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-strong, #111);
+}
+
+a.author-name {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.author-name:hover {
+  text-decoration: underline;
+}
+
+.post-date {
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+}
+
+.post-content {
+  margin-bottom: 12px;
+}
+
+.post-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-strong, #111);
+  margin: 0 0 6px;
+}
+
+.post-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-strong, #374151);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle, #e5e7eb);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-muted, #6b7280);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.action-btn mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+}
+
+.action-btn:hover {
+  background: var(--surface-2, #f3f4f6);
+  color: var(--text-strong, #111);
+}
+
+.action-btn.liked {
+  color: oklch(56% 0.2 25);
+}
+
+.action-btn.liked:hover {
+  background: oklch(95% 0.02 25);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn.bookmarked {
+  color: oklch(56% 0.2 240);
+}
+
+.action-btn.bookmarked:hover {
+  background: oklch(95% 0.02 240);
+}

@@ -7,7 +7,7 @@
       {{ post().userId[0].toUpperCase() }}
     </div>
     <div class="post-meta">
-      <span class="author-name">{{ post().userId }}</span>
+      <a class="author-name" [routerLink]="['/profile', post().userId]">{{ post().userId }}</a>
       <span class="post-date">{{ formatDate(post().createdAt) }}</span>
     </div>
   </div>

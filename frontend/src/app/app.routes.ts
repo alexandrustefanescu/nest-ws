@@ -16,7 +16,26 @@ export const routes: Routes = [
         path: '',
         pathMatch: 'full',
         loadComponent: () =>
-          import('./features/rooms/empty-room').then((m) => m.EmptyRoom),
+          import('./features/home/home-feed').then((m) => m.HomeFeed),
+      },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/notifications').then((m) => m.Notifications),
+      },
+      {
+        path: 'chat',
+        loadComponent: () =>
+          import('./features/chat/direct-messages').then((m) => m.DirectMessages),
+      },
+      {
+        path: 'bookmarks',
+        loadComponent: () =>
+          import('./features/bookmarks/bookmarks').then((m) => m.Bookmarks),
+      },
+      {
+        path: 'profile/:userId',
+        loadComponent: () => import('./features/profile/profile').then((m) => m.Profile),
       },
       {
         path: 'rooms/:id',

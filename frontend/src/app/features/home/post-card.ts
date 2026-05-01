@@ -5,6 +5,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
@@ -16,7 +17,7 @@ import { CommentSection } from './comment-section';
 @Component({
   selector: 'app-post-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatIconModule, MatButtonModule, MatChipsModule, CommentSection],
+  imports: [RouterLink, MatIconModule, MatButtonModule, MatChipsModule, CommentSection],
   templateUrl: './post-card.html',
   styleUrl: './post-card.css',
 })

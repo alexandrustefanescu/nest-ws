@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   effect,
   inject,
   signal,
@@ -63,14 +64,14 @@ export class Shell {
   protected readonly sidenavOpen = signal(false);
   protected newRoomName = '';
 
-  protected readonly navItems: NavItem[] = [
+  protected readonly navItems = computed<NavItem[]>(() => [
     { label: 'Home', icon: 'home', route: '/', activeRoute: '/' },
     { label: 'Notifications', icon: 'notifications', route: '/notifications', activeRoute: '/notifications' },
     { label: 'Chat', icon: 'chat', route: '/chat', activeRoute: '/chat' },
     { label: 'Bookmarks', icon: 'bookmark', route: '/bookmarks', activeRoute: '/bookmarks' },
     { label: 'Rooms', icon: 'group_work', route: '/rooms', activeRoute: '/rooms' },
-    { label: 'Profile', icon: 'person', route: '/profile', activeRoute: '/profile' },
-  ];
+    { label: 'Profile', icon: 'person', route: `/profile/${this.identity.userId()}`, activeRoute: '/profile' },
+  ]);
 
   private readonly router = inject(Router);
   private readonly shellUi = inject(ShellUiService);

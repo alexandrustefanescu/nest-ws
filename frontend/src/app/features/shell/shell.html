@@ -44,7 +44,7 @@
       [class.is-open]="sidenavOpen()"
     >
       <nav class="nav-list" aria-label="Main navigation">
-        @for (item of navItems; track item.label) {
+        @for (item of navItems(); track item.label) {
           <a
             mat-list-item
             class="nav-item"
