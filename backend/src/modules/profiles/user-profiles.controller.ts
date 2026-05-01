@@ -10,7 +10,7 @@ export class UserProfilesController {
   constructor(private readonly svc: UserProfilesService) {}
 
   @Get(':userId')
-  @ApiOperation({ summary: 'Get or create a user profile' })
+  @ApiOperation({ summary: 'Get user profile' })
   async getProfile(@Param('userId') userId: string) {
     const profile = await this.svc.getOrCreate(userId);
     return { userId: profile.userId, displayName: profile.displayName, bio: profile.bio };
@@ -18,10 +18,10 @@ export class UserProfilesController {
 
   @Patch(':userId')
   @ApiOperation({ summary: 'Update own profile (requestingUserId must match userId)' })
-  @ApiQuery({ name: 'userId', type: String })
+  @ApiQuery({ name: 'requestingUserId', type: String })
   async updateProfile(
     @Param('userId') userId: string,
-    @Query('userId') requestingUserId: string,
+    @Query('requestingUserId') requestingUserId: string,
     @Body() dto: UpdateProfileDto,
   ) {
     if (requestingUserId !== userId) throw new ForbiddenException('Cannot edit another user\'s profile');
