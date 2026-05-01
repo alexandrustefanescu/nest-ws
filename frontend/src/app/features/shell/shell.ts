@@ -9,8 +9,9 @@ import {
   type TemplateRef,
   viewChild,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
@@ -76,6 +77,9 @@ export class Shell {
   private readonly router = inject(Router);
   private readonly shellUi = inject(ShellUiService);
   private readonly destroyRef = inject(DestroyRef);
+
+  private readonly _currentUrl = signal(this.router.url);
+  protected readonly isProfileActive = computed(() => this._currentUrl().startsWith('/profile'));
   private readonly dialog = inject(MatDialog);
   private readonly aboutTpl = viewChild<TemplateRef<unknown>>('aboutDialog');
 
@@ -93,6 +97,12 @@ export class Shell {
     this.shellUi.toggleSidenav$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.sidenavOpen.update((v) => !v));
+
+    // Track URL for active state on dynamic routes (e.g. /profile/:userId)
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((e) => this._currentUrl.set((e as NavigationEnd).urlAfterRedirects));
   }
 
   closeSidenav(): void {

@@ -51,6 +51,8 @@
             [routerLink]="item.route"
             routerLinkActive="nav-active"
             [routerLinkActiveOptions]="{ exact: item.activeRoute === '/' }"
+            [class.nav-active]="item.label === 'Profile' && isProfileActive()"
+            [attr.aria-current]="item.label === 'Profile' ? (isProfileActive() ? 'page' : null) : null"
           >
             @if (item.label === 'Notifications') {
               <mat-icon
