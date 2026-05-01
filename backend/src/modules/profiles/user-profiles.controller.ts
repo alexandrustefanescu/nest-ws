@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, Param, Patch, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, Param, Patch, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { UserProfilesService } from './user-profiles.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -24,6 +24,7 @@ export class UserProfilesController {
     @Query('requestingUserId') requestingUserId: string,
     @Body() dto: UpdateProfileDto,
   ) {
+    if (!requestingUserId) throw new BadRequestException('requestingUserId query param is required');
     if (requestingUserId !== userId) throw new ForbiddenException('Cannot edit another user\'s profile');
     const profile = await this.svc.update(userId, dto);
     return { userId: profile.userId, displayName: profile.displayName, bio: profile.bio };

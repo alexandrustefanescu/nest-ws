@@ -57,6 +57,7 @@ export class Profile implements OnInit, OnDestroy {
 
   protected readonly postsLoaded = signal(false);
   protected readonly repliesLoaded = signal(false);
+  protected readonly repliesLoading = signal(false);
 
   async ngOnInit(): Promise<void> {
     this.userId.set(this.route.snapshot.paramMap.get('userId') ?? '');
@@ -98,8 +99,13 @@ export class Profile implements OnInit, OnDestroy {
 
   protected async onTabChange(event: MatTabChangeEvent): Promise<void> {
     if (event.index === 1 && !this.repliesLoaded()) {
-      await this.svc.loadReplies(this.userId());
-      this.repliesLoaded.set(true);
+      this.repliesLoading.set(true);
+      try {
+        await this.svc.loadReplies(this.userId());
+      } finally {
+        this.repliesLoading.set(false);
+        this.repliesLoaded.set(true);
+      }
     }
   }
 }

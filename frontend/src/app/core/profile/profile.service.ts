@@ -22,15 +22,10 @@ export class ProfileService {
   readonly loading = signal(false);
 
   async loadProfile(userId: string): Promise<void> {
-    this.loading.set(true);
-    try {
-      const p = await firstValueFrom(
-        this.http.get<UserProfile>(`${environment.apiUrl}/api/profiles/${userId}`),
-      );
-      this.profile.set(p);
-    } finally {
-      this.loading.set(false);
-    }
+    const p = await firstValueFrom(
+      this.http.get<UserProfile>(`${environment.apiUrl}/api/profiles/${userId}`),
+    );
+    this.profile.set(p);
   }
 
   async loadPosts(userId: string): Promise<void> {

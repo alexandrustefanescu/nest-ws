@@ -75,14 +75,14 @@
       </mat-tab>
 
       <mat-tab label="Replies">
-        @if (!repliesLoaded()) {
+        @if (repliesLoading()) {
           <div class="tab-loading"><mat-spinner diameter="28" /></div>
-        } @else if (svc.replies().length === 0) {
+        } @else if (svc.replies().length === 0 && repliesLoaded()) {
           <div class="tab-empty">
             <mat-icon>comment</mat-icon>
             <p>No replies yet.</p>
           </div>
-        } @else {
+        } @else if (repliesLoaded()) {
           <div class="tab-feed">
             @for (post of svc.replies(); track post.id) {
               <app-post-card [post]="post" [currentUserId]="identity.userId()" />
