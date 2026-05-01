@@ -40,7 +40,6 @@ export class SocialEngagementService {
       userId,
       body: normalizeCommentBody(body),
     });
-    this.em.persist(comment);
     await this.em.flush();
     void this.notificationsService.create(
       post.userId,

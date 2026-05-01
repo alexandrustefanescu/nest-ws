@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { EntityManager } from '@mikro-orm/sqlite';
 import { Test, type TestingModule } from '@nestjs/testing';
 
@@ -56,7 +57,6 @@ describe('MessagesService', () => {
       userId: 'user1',
       text: 'Hello',
     });
-    expect(em.persist).toHaveBeenCalledWith(mockMessage);
     expect(em.flush).toHaveBeenCalled();
     expect(result).toEqual(mockMessage);
   });

@@ -5,6 +5,7 @@ import {
   normalizePostBody,
   normalizePostTitle,
 } from './social-post-content.policy';
+import { Room } from '../rooms/room.entity';
 import { PostScope, SocialPost } from './social-post.entity';
 
 const DEFAULT_FEED_LIMIT = 50;
@@ -92,12 +93,11 @@ export class SocialPostsService {
   }): Promise<SocialPost> {
     const post = this.em.create(SocialPost, {
       scope: input.scope,
-      room: input.room,
+      room: input.room === null ? null : this.em.getReference(Room, input.room),
       userId: input.userId,
       title: normalizePostTitle(input.title),
       body: normalizePostBody(input.body),
     });
-    this.em.persist(post);
     await this.em.flush();
     return post;
   }

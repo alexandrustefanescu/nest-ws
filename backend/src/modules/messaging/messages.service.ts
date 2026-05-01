@@ -21,7 +21,6 @@ export class MessagesService {
       userId,
       text: normalizePostText(text),
     });
-    this.em.persist(message);
     await this.em.flush();
     return message;
   }

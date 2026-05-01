@@ -31,7 +31,6 @@ export class NotificationsService {
       type,
       post,
     });
-    this.em.persist(notification);
     await this.em.flush();
 
     this.gateway.server.to(`user:${recipientId}`).emit('notification:new', {

@@ -19,7 +19,6 @@ export class UserProfilesService {
       displayName: null,
       bio: null,
     });
-    this.em.persist(blank);
     await this.em.flush();
     return blank;
   }
