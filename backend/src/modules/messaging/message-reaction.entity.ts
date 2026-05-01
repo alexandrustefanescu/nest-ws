@@ -1,22 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Unique } from 'typeorm';
+import { Entity, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/core';
 import { Message } from './message.entity';
 
-@Entity('message_reactions')
-@Unique(['messageId', 'userId', 'emoji'])
+@Entity({ tableName: 'message_reactions' })
+@Unique({ properties: ['message', 'userId', 'emoji'] })
 export class MessageReaction {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryKey()
+  id!: number;
 
-  @Column()
-  messageId: number;
+  @ManyToOne(() => Message, { deleteRule: 'cascade' })
+  message!: Message;
 
-  @Column()
-  userId: string;
+  @Property()
+  userId!: string;
 
-  @Column()
-  emoji: string;
-
-  @ManyToOne(() => Message, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'messageId' })
-  message: Message;
+  @Property()
+  emoji!: string;
 }
