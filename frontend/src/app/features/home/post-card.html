@@ -37,6 +37,7 @@
       class="action-btn"
       [class.bookmarked]="bookmarks.isBookmarked(post().id)"
       (click)="toggleBookmark()"
+      [attr.aria-label]="bookmarks.isBookmarked(post().id) ? 'Remove bookmark' : 'Add bookmark'"
     >
       <mat-icon>{{ bookmarks.isBookmarked(post().id) ? 'bookmark' : 'bookmark_border' }}</mat-icon>
     </button>
