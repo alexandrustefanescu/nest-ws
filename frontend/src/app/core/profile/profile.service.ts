@@ -37,18 +37,19 @@ export class ProfileService {
     const res = await firstValueFrom(
       this.http.get<{ posts: SocialPost[] }>(`${environment.apiUrl}/api/profiles/${userId}/posts`),
     );
-    this.posts.set(res.posts);
+    this.posts.set(res?.posts ?? []);
   }
 
   async loadReplies(userId: string): Promise<void> {
     const res = await firstValueFrom(
       this.http.get<{ posts: SocialPost[] }>(`${environment.apiUrl}/api/profiles/${userId}/replies`),
     );
-    this.replies.set(res.posts);
+    this.replies.set(res?.posts ?? []);
   }
 
   async updateProfile(userId: string, patch: { displayName?: string; bio?: string }): Promise<void> {
     const requestingUserId = this.identity.userId();
+    if (!requestingUserId) return;
     const updated = await firstValueFrom(
       this.http.patch<UserProfile>(
         `${environment.apiUrl}/api/profiles/${userId}`,
@@ -63,5 +64,6 @@ export class ProfileService {
     this.profile.set(null);
     this.posts.set([]);
     this.replies.set([]);
+    this.loading.set(false);
   }
 }
