@@ -43,82 +43,143 @@
       "
       [class.is-open]="sidenavOpen()"
     >
-      <div class="flex items-center justify-between px-4 py-3">
-        <h2>Rooms</h2>
-        <button
-          mat-icon-button
-          (click)="toggleNewRoom()"
-          [attr.aria-label]="showNewRoom() ? 'Cancel new room' : 'New room'"
-        >
-          <mat-icon>{{ showNewRoom() ? 'close' : 'add' }}</mat-icon>
-        </button>
-      </div>
-
-      @if (showNewRoom()) {
-        <div class="px-6 pb-4 flex flex-col gap-4">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Room name</mat-label>
-            <input
-              matInput
-              [(ngModel)]="newRoomName"
-              (keydown.enter)="submitNewRoom()"
-              (keydown.escape)="cancelNewRoom()"
-              placeholder="e.g. general"
-              autocomplete="off"
-            />
-          </mat-form-field>
-          <button mat-flat-button [disabled]="!newRoomName.trim()" (click)="submitNewRoom()">
-            Create room
-          </button>
-        </div>
-      }
-
-      <mat-nav-list class="flex-1 overflow-y-auto space-y-2 px-6!" aria-label="Rooms">
-        @for (room of chat.rooms(); track room.id) {
+      <nav class="nav-list" aria-label="Main navigation">
+        @for (item of navItems; track item.label) {
           <a
             mat-list-item
-            class="group/room"
-            [routerLink]="['/rooms', room.id]"
-            routerLinkActive="active-room"
-            [activated]="isActiveRoom(room.id)"
-            [attr.aria-current]="isActiveRoom(room.id) ? 'page' : null"
-            (click)="closeSidenav()"
+            class="nav-item"
+            [routerLink]="item.route"
+            routerLinkActive="nav-active"
+            [routerLinkActiveOptions]="{ exact: item.activeRoute === '/' }"
           >
-            <mat-icon matListItemIcon>tag</mat-icon>
-            <span matListItemTitle>{{ room.name }}</span>
-            <div
-              matListItemMeta
-              class="opacity-0 transition-opacity duration-150 group-hover/room:opacity-100 focus-within:opacity-100"
-            >
-              <button
-                mat-icon-button
-                (click)="onDeleteRoom($event, room.id)"
-                [attr.aria-label]="'Delete ' + room.name"
-              >
-                <mat-icon>delete</mat-icon>
-              </button>
-            </div>
+            @if (item.label === 'Notifications') {
+              <mat-icon
+                matListItemIcon
+                [matBadge]="notifications.unreadCount() || null"
+                matBadgeColor="warn"
+                matBadgeSize="small"
+              >{{ item.icon }}</mat-icon>
+            } @else {
+              <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            }
+            <span matListItemTitle>{{ item.label }}</span>
           </a>
         }
+      </nav>
 
-        @if (chat.rooms().length === 0) {
-          @if (chat.connectionState() === 'connected' && !showNewRoom()) {
-            <div class="p-6 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)">
-              No rooms yet —
-              <button mat-button (click)="toggleNewRoom()">create one</button>
-            </div>
-          } @else if (chat.connectionState() !== 'connected') {
-            <div
-              class="p-6 text-sm text-center"
-              style="color: var(--mat-sys-on-surface-variant)"
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              Connecting…
-            </div>
-          }
+      <mat-divider />
+
+      <div class="rooms-section">
+        <div class="rooms-header">
+          <h2 class="rooms-label">Rooms</h2>
+          <button
+            mat-icon-button
+            (click)="toggleNewRoom()"
+            [attr.aria-label]="showNewRoom() ? 'Cancel new room' : 'New room'"
+          >
+            <mat-icon>{{ showNewRoom() ? 'close' : 'add' }}</mat-icon>
+          </button>
+        </div>
+
+        @if (showNewRoom()) {
+          <div class="new-room-form">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Room name</mat-label>
+              <input
+                matInput
+                [(ngModel)]="newRoomName"
+                (keydown.enter)="submitNewRoom()"
+                (keydown.escape)="cancelNewRoom()"
+                placeholder="e.g. general"
+                autocomplete="off"
+              />
+            </mat-form-field>
+            <button mat-flat-button [disabled]="!newRoomName.trim()" (click)="submitNewRoom()">
+              Create room
+            </button>
+          </div>
         }
-      </mat-nav-list>
+
+        <mat-nav-list class="room-list" aria-label="Rooms">
+          @for (room of chat.rooms(); track room.id) {
+            <a
+              mat-list-item
+              class="group/room"
+              [routerLink]="['/rooms', room.id]"
+              routerLinkActive="active-room"
+              [activated]="isActiveRoom(room.id)"
+              [attr.aria-current]="isActiveRoom(room.id) ? 'page' : null"
+              (click)="closeSidenav()"
+            >
+              <mat-icon matListItemIcon>tag</mat-icon>
+              <span matListItemTitle>{{ room.name }}</span>
+              <div
+                matListItemMeta
+                class="opacity-0 transition-opacity duration-150 group-hover/room:opacity-100 focus-within:opacity-100"
+              >
+                <button
+                  mat-icon-button
+                  (click)="onDeleteRoom($event, room.id)"
+                  [attr.aria-label]="'Delete ' + room.name"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </a>
+          }
+
+          @if (chat.rooms().length === 0) {
+            @if (chat.connectionState() === 'connected' && !showNewRoom()) {
+              <div class="p-4 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)">
+                No rooms yet —
+                <button mat-button (click)="toggleNewRoom()">create one</button>
+              </div>
+            } @else if (chat.connectionState() !== 'connected') {
+              <div class="p-4 text-sm text-center" style="color: var(--mat-sys-on-surface-variant)" aria-live="polite" aria-atomic="true">
+                Connecting…
+              </div>
+            }
+          }
+        </mat-nav-list>
+      </div>
+
+      <mat-divider />
+      <mat-list>
+        <mat-list-item>
+          <span
+            matListItemAvatar
+            class="inline-flex items-center justify-center rounded-full text-sm font-semibold"
+            style="background: var(--mat-sys-primary); color: var(--mat-sys-on-primary)"
+          >
+            {{ identity.userId()[0].toUpperCase() }}
+          </span>
+          <span matListItemTitle>{{ identity.userId() }}</span>
+          <button
+            mat-icon-button
+            matListItemMeta
+            [matMenuTriggerFor]="themeMenu"
+            [attr.aria-label]="'Theme: ' + themeLabel()"
+            [matTooltip]="'Theme: ' + themeLabel()"
+          >
+            <mat-icon>{{ themeIcon() }}</mat-icon>
+          </button>
+        </mat-list-item>
+      </mat-list>
+
+      <mat-menu #themeMenu="matMenu" yPosition="above">
+        <button mat-menu-item (click)="setTheme('light')">
+          <mat-icon>light_mode</mat-icon>
+          <span>Light</span>
+        </button>
+        <button mat-menu-item (click)="setTheme('dark')">
+          <mat-icon>dark_mode</mat-icon>
+          <span>Dark</span>
+        </button>
+        <button mat-menu-item (click)="setTheme('system')">
+          <mat-icon>desktop_windows</mat-icon>
+          <span>System</span>
+        </button>
+      </mat-menu>
     </aside>
 
     <main class="flex-1 min-w-0 flex flex-col overflow-hidden">
