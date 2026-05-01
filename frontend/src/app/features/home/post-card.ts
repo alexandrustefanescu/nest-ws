@@ -61,8 +61,8 @@ export class PostCard {
     }
   }
 
-  toggleBookmark(): void {
-    this.bookmarks.toggleBookmark(this.post());
+  async toggleBookmark(): Promise<void> {
+    await this.bookmarks.toggleBookmark(this.post());
   }
 
   toggleComments(): void {
