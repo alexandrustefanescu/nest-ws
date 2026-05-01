@@ -19,5 +19,28 @@ export interface Message {
   createdAt: string;
 }
 
+export type Post = Message;
+
 /** { [emoji]: userId[] } */
 export type ReactionMap = Record<string, string[]>;
+
+export type NotificationType = 'like' | 'comment';
+
+export interface Notification {
+  id: number;
+  type: NotificationType;
+  actorId: string;
+  postId: number;
+  postTitle: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface NotificationNewEvent {
+  id: number;
+  type: NotificationType;
+  actorId: string;
+  postId: number;
+  postTitle: string;
+  createdAt: string;
+}
